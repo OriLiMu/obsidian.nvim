@@ -1125,7 +1125,7 @@ util.get_icon = function(path)
 end
 
 -- We are very loose here because obsidian allows pretty much anything
-util.ANCHOR_LINK_PATTERN = "#[%w%d][^#]*"
+util.ANCHOR_LINK_PATTERN = "#[^%s]+"
 
 util.BLOCK_PATTERN = "%^[%w%d][%w%d-]*"
 
@@ -1139,11 +1139,12 @@ util.strip_anchor_links = function(line)
   local anchor
 
   while true do
-    local anchor_match = string.match(line, util.ANCHOR_LINK_PATTERN .. "$")
-    if anchor_match then
+    local start_pos, end_pos = string.find(line, util.ANCHOR_LINK_PATTERN .. "$")
+    if start_pos then
+      local anchor_match = string.sub(line, start_pos, end_pos)
       anchor = anchor or ""
       anchor = anchor_match .. anchor
-      line = string.sub(line, 1, -anchor_match:len() - 1)
+      line = string.sub(line, 1, start_pos - 1)
     else
       break
     end
