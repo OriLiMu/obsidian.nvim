@@ -1238,8 +1238,14 @@ util.standardize_anchor = function(anchor)
   anchor = string.lower(anchor)
   -- Replace whitespace with "-".
   anchor = string.gsub(anchor, "%s", "-")
-  -- Remove every non-alphanumeric character.
-  anchor = string.gsub(anchor, "[^#%w_-]", "")
+  -- Remove every non-alphanumeric character except Chinese characters.
+  -- Keep:
+  -- - # (for anchor links)
+  -- - word characters (%w)
+  -- - underscore (_)
+  -- - hyphen (-)
+  -- - Chinese characters (UTF-8 byte ranges)
+  anchor = string.gsub(anchor, "[^#%w_%-\xe4-\xef\x80-\xbf]", "")
   return anchor
 end
 
