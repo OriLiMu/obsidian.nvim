@@ -14,7 +14,6 @@ return function(client, data)
       if not note_location:match "^%[%[.*%]%]$" then
         note_location = "[[" .. note_location .. "]]"
       end
-      print("note_location: ", note_location)
 
       client:follow_link_async(note_location, opts)
       -- 使用延迟函数在跳转完成后执行 zz
