@@ -1125,7 +1125,7 @@ util.get_icon = function(path)
 end
 
 -- We are very loose here because obsidian allows pretty much anything
-util.ANCHOR_LINK_PATTERN = "#[^%s]+"
+util.ANCHOR_LINK_PATTERN = "#[^%[%]]*"
 
 util.BLOCK_PATTERN = "%^[%w%d][%w%d-]*"
 
@@ -1138,6 +1138,19 @@ util.strip_anchor_links = function(line)
   ---@type string|?
   local anchor
 
+  -- 检查是否是 [[note_name#anchor]] 格式的链接
+  local link_match = string.match(line, "%[%[(.-)%]%]")
+  if link_match then
+    local hash_pos = string.find(link_match, "#")
+    if hash_pos then
+      local note_path = string.sub(link_match, 1, hash_pos - 1)
+      anchor = string.sub(link_match, hash_pos)
+      return note_path, util.standardize_anchor(anchor)
+    end
+    return link_match, nil
+  end
+
+  -- 处理普通文本中的锚点
   while true do
     local start_pos, end_pos = string.find(line, util.ANCHOR_LINK_PATTERN .. "$")
     if start_pos then
