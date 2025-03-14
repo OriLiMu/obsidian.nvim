@@ -16,17 +16,23 @@ return function(client, data)
       end
 
       client:follow_link_async(note_location, opts)
-      -- 使用延迟函数在跳转完成后执行 zz
+      -- the link is not loaded immediately, so we need to wait for a while
       vim.defer_fn(function()
-        vim.api.nvim_command "normal! zz"
-      end, 10)
+        -- ensure the buffer is loaded
+        vim.schedule(function()
+          vim.cmd "normal! zz"
+        end)
+      end, 100)
       return
     end
   end
 
   client:follow_link_async(nil, opts)
-  -- 使用延迟函数在跳转完成后执行 zz
+  -- the link is not loaded immediately, so we need to wait for a while
   vim.defer_fn(function()
-    vim.api.nvim_command "normal! zz"
-  end, 10)
+    -- ensure the buffer is loaded
+    vim.schedule(function()
+      vim.cmd "normal! zz"
+    end)
+  end, 100)
 end
