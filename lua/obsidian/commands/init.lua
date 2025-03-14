@@ -166,7 +166,7 @@ M.register("ObsidianLink", {
 
 M.register("ObsidianLinks", { opts = { nargs = 0, desc = "Collect all links within the current buffer" } })
 
-M.register("ObsidianFollowLink", { opts = { nargs = "?", desc = "Follow reference or link under cursor" } })
+M.register("ObsidianFollowLink", { opts = { nargs = "*", desc = "Follow reference or link under cursor" } })
 
 M.register("ObsidianToggleCheckbox", { opts = { nargs = 0, desc = "Toggle checkbox" } })
 
