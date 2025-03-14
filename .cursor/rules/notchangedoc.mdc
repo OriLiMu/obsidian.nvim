@@ -1,0 +1,7 @@
+---
+description: 
+globs: *.md, *.txt
+alwaysApply: false
+---
+
+# don't  change the document or readme file something like that. Unless I have told you to do it.
