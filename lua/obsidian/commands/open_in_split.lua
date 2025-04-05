@@ -16,24 +16,26 @@ local function open_in_split(client)
     log.info("Number of notes found: %d", #notes)
 
     if #notes > 0 then
-      -- Open note in right split
+      -- Store current window and buffer info
       local current_win = vim.api.nvim_get_current_win()
-      log.info("Current window ID: %d", current_win)
+      local current_buf = vim.api.nvim_win_get_buf(current_win)
+      local current_name = vim.api.nvim_buf_get_name(current_buf)
+      log.info("Current window ID: %d, buffer: %d, file: %s", current_win, current_buf, current_name)
 
       client:open_note(notes[1], {
         open_strategy = "vsplit",
       })
       log.info "Note opened in vsplit"
 
-      -- Get the newly created window
+      -- Get the newly created window and buffer info
       local new_win = vim.api.nvim_get_current_win()
-      log.info("New window ID: %d", new_win)
+      local new_buf = vim.api.nvim_win_get_buf(new_win)
+      local new_name = vim.api.nvim_buf_get_name(new_buf)
+      log.info("New window ID: %d, buffer: %d, file: %s", new_win, new_buf, new_name)
 
-      -- Only set the keymap if we're in a different window
-      if new_win ~= current_win then
-        log.info("Setting up 'q' keymap for window %d", new_win)
-        -- Set local keymap for this buffer
-        local current_buf = vim.api.nvim_get_current_buf()
+      -- Set the keymap if files are different
+      if new_name ~= current_name then
+        log.info("Different files detected, setting up 'q' keymap for window %d", new_win)
         vim.keymap.set("n", "q", function()
           log.info("'q' pressed, attempting to close window %d", new_win)
           -- Close the window
@@ -43,10 +45,10 @@ local function open_in_split(client)
           else
             log.warn("Window %d is no longer valid", new_win)
           end
-        end, { buffer = current_buf, desc = "Close split window" })
-        log.info("Keymap set successfully for buffer %d", current_buf)
+        end, { buffer = new_buf, desc = "Close split window" })
+        log.info("Keymap set successfully for buffer %d", new_buf)
       else
-        log.warn "New window is same as current window, skipping keymap"
+        log.warn "Same file detected in both windows, skipping keymap"
       end
     else
       log.warn("Note not found: %s", link_location or "empty link")
