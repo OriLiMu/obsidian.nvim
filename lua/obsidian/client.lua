@@ -1602,7 +1602,12 @@ Client.new_note_id = function(self, title)
     new_id = new_id:gsub("%.md$", "", 1)
     return new_id
   else
-    return util.zettel_id()
+    -- Return the title as ID if provided, otherwise generate a simple ID
+    if title and title:len() > 0 then
+      return title
+    else
+      return "untitled"
+    end
   end
 end
 
