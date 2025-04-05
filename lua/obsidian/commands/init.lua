@@ -32,7 +32,6 @@ local command_lookups = {
 
 local M = setmetatable({
   commands = {},
-  open_in_split = open_in_split,
 }, {
   __index = function(t, k)
     local require_path = command_lookups[k]
@@ -194,6 +193,11 @@ M.register("ObsidianDebug", { opts = { nargs = 0, desc = "Log some information f
 
 M.register("ObsidianTOC", { opts = { nargs = 0, desc = "Load the table of contents into a picker" } })
 
-M.register("ObsidianOpenInSplit", { opts = { nargs = 0, desc = "Open note in split window" } })
+M.register("ObsidianOpenInSplit", {
+  opts = { nargs = 0, desc = "Open note in split window" },
+  func = function(client, _)
+    open_in_split(client)
+  end,
+})
 
 return M
