@@ -1,5 +1,6 @@
 local util = require "obsidian.util"
 local iter = require("obsidian.itertools").iter
+local open_in_split = require("obsidian.commands.open_in_split").open_in_split
 
 local command_lookups = {
   ObsidianCheck = "obsidian.commands.check",
@@ -26,10 +27,12 @@ local command_lookups = {
   ObsidianExtractNote = "obsidian.commands.extract_note",
   ObsidianDebug = "obsidian.commands.debug",
   ObsidianTOC = "obsidian.commands.toc",
+  ObsidianOpenInSplit = "obsidian.commands.open_in_split",
 }
 
 local M = setmetatable({
   commands = {},
+  open_in_split = open_in_split,
 }, {
   __index = function(t, k)
     local require_path = command_lookups[k]
@@ -190,5 +193,7 @@ M.register(
 M.register("ObsidianDebug", { opts = { nargs = 0, desc = "Log some information for debugging" } })
 
 M.register("ObsidianTOC", { opts = { nargs = 0, desc = "Load the table of contents into a picker" } })
+
+M.register("ObsidianOpenInSplit", { opts = { nargs = 0, desc = "Open note in split window" } })
 
 return M
