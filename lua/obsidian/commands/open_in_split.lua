@@ -34,18 +34,45 @@ local function open_in_split(client)
       -- Set the keymap if windows are different
       if new_win ~= original_win then
         log.info("Different windows detected, setting up 'q' keymap for window %d", new_win)
-        local new_buf = vim.api.nvim_win_get_buf(new_win)
+
+        -- Get the current buffer after opening the note
+        local new_buf = vim.api.nvim_get_current_buf()
+        log.info("Setting keymap for buffer %d in window %d", new_buf, new_win)
+
+        -- Create the keymap
+        local opts = {
+          buffer = new_buf,
+          desc = "Close split window",
+          silent = true,
+          nowait = true,
+        }
+
         vim.keymap.set("n", "q", function()
-          log.info("'q' pressed, attempting to close window %d", new_win)
-          -- Close the window
+          log.info("'q' pressed in buffer %d, window %d", new_buf, new_win)
           if vim.api.nvim_win_is_valid(new_win) then
             vim.api.nvim_win_close(new_win, false)
-            log.info "Window closed successfully"
+            log.info("Window %d closed successfully", new_win)
           else
             log.warn("Window %d is no longer valid", new_win)
           end
-        end, { buffer = new_buf, desc = "Close split window" })
-        log.info("Keymap set successfully for buffer %d", new_buf)
+        end, opts)
+
+        -- Verify the keymap was set
+        local maps = vim.api.nvim_buf_get_keymap(new_buf, "n")
+        local found = false
+        for _, map in ipairs(maps) do
+          if map.lhs == "q" then
+            found = true
+            break
+          end
+        end
+        log.info("Keymap verification - found: %s", found)
+
+        if found then
+          log.info("Keymap set successfully for buffer %d", new_buf)
+        else
+          log.warn("Failed to set keymap for buffer %d", new_buf)
+        end
       else
         log.warn "Same window detected, skipping keymap"
       end
