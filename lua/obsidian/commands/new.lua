@@ -62,7 +62,7 @@ return function(client, data)
       local target_dir = vault_root / selected_dir
       -- Use the title as the filename and ID, removing any digits at the start
       local clean_id = note.title or os.date "%Y%m%d%H%M%S"
-      clean_id = clean_id:gsub("^%d+%-", ""):lower()
+      clean_id = clean_id:gsub("^%d+%-", "")
       note.id = clean_id
       note.path = target_dir / Path.new(clean_id):with_suffix ".md"
       note.aliases = {} -- Set empty aliases
