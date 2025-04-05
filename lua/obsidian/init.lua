@@ -227,31 +227,4 @@ obsidian.setup = function(opts)
   return client
 end
 
-obsidian.commands = {
-  -- Basic note operations
-  new = require("obsidian.commands.new").new_note,
-  today = require("obsidian.commands.today").today,
-  tomorrow = require("obsidian.commands.tomorrow").tomorrow,
-  yesterday = require("obsidian.commands.yesterday").yesterday,
-  follow_link = require("obsidian.commands.follow_link").follow_link,
-  gf_passthrough = require("obsidian.commands.gf_passthrough").gf_passthrough,
-  open_in_split = require("obsidian.commands.open_in_split").open_in_split,
-
-  -- Search
-  search = require("obsidian.commands.search").search,
-  quick_switch = require("obsidian.commands.quick_switch").quick_switch,
-  backlinks = require("obsidian.commands.backlinks").backlinks,
-  tags = require("obsidian.commands.tags").tags,
-
-  -- Template
-  template = require("obsidian.commands.template").template,
-  template_list = require("obsidian.commands.template").template_list,
-
-  -- Workspace
-  workspace = require("obsidian.commands.workspace").workspace,
-
-  -- Rename
-  rename = require("obsidian.commands.rename").rename,
-}
-
 return obsidian
