@@ -16,11 +16,9 @@ local function open_in_split(client)
     log.info("Number of notes found: %d", #notes)
 
     if #notes > 0 then
-      -- Store current window and buffer info before split
+      -- Store current window ID before split
       local original_win = vim.api.nvim_get_current_win()
-      local original_buf = vim.api.nvim_win_get_buf(original_win)
-      local original_name = vim.api.nvim_buf_get_name(original_buf)
-      log.info("Original window ID: %d, buffer: %d, file: %s", original_win, original_buf, original_name)
+      log.info("Original window ID: %d", original_win)
 
       -- Create a new window first
       vim.cmd "vsplit"
@@ -33,14 +31,10 @@ local function open_in_split(client)
       })
       log.info "Note opened in current window"
 
-      -- Get the new buffer info after note is opened
-      local new_buf = vim.api.nvim_win_get_buf(new_win)
-      local new_name = vim.api.nvim_buf_get_name(new_buf)
-      log.info("New window ID: %d, buffer: %d, file: %s", new_win, new_buf, new_name)
-
-      -- Set the keymap if files are different
-      if new_name ~= original_name then
-        log.info("Different files detected, setting up 'q' keymap for window %d", new_win)
+      -- Set the keymap if windows are different
+      if new_win ~= original_win then
+        log.info("Different windows detected, setting up 'q' keymap for window %d", new_win)
+        local new_buf = vim.api.nvim_win_get_buf(new_win)
         vim.keymap.set("n", "q", function()
           log.info("'q' pressed, attempting to close window %d", new_win)
           -- Close the window
@@ -53,7 +47,7 @@ local function open_in_split(client)
         end, { buffer = new_buf, desc = "Close split window" })
         log.info("Keymap set successfully for buffer %d", new_buf)
       else
-        log.warn "Same file detected in both windows, skipping keymap"
+        log.warn "Same window detected, skipping keymap"
       end
     else
       log.warn("Note not found: %s", link_location or "empty link")
