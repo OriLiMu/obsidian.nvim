@@ -227,7 +227,7 @@ obsidian.setup = function(opts)
   return client
 end
 
-M.commands = {
+obsidian.commands = {
   -- Basic note operations
   new = require("obsidian.commands.new").new_note,
   today = require("obsidian.commands.today").today,
