@@ -39,23 +39,26 @@ local function open_in_split(client)
         local new_buf = vim.api.nvim_get_current_buf()
         log.info("Setting keymap for buffer %d in window %d", new_buf, new_win)
 
-        -- Create the keymap
-        local opts = {
-          buffer = new_buf,
-          desc = "Close split window",
-          silent = true,
-          nowait = true,
-        }
-
-        vim.keymap.set("n", "q", function()
-          log.info("'q' pressed in buffer %d, window %d", new_buf, new_win)
+        -- Create a command to close the window
+        local cmd_name = "ObsidianCloseSplit" .. new_win
+        vim.api.nvim_create_user_command(cmd_name, function()
+          log.info("Command executed for window %d", new_win)
           if vim.api.nvim_win_is_valid(new_win) then
             vim.api.nvim_win_close(new_win, false)
             log.info("Window %d closed successfully", new_win)
           else
             log.warn("Window %d is no longer valid", new_win)
           end
-        end, opts)
+        end, {})
+
+        -- Set the keymap to execute the command
+        local opts = {
+          noremap = true,
+          silent = true,
+          nowait = true,
+        }
+        vim.api.nvim_buf_set_keymap(new_buf, "n", "q", string.format("<cmd>%s<CR>", cmd_name), opts)
+        log.info("Keymap set to execute command: %s", cmd_name)
 
         -- Verify the keymap was set
         local maps = vim.api.nvim_buf_get_keymap(new_buf, "n")
@@ -63,6 +66,7 @@ local function open_in_split(client)
         for _, map in ipairs(maps) do
           if map.lhs == "q" then
             found = true
+            log.info("Found keymap: lhs=%s, rhs=%s", map.lhs, map.rhs)
             break
           end
         end
