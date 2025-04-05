@@ -9,14 +9,20 @@ return function(client, data)
   if data.args:len() > 0 then
     note = client:create_note { title = data.args, no_write = true }
   else
-    local title = util.input("Enter title or path (optional): ", { completion = "file" })
-    if not title then
-      log.warn "Aborted"
-      return
-    elseif title == "" then
-      title = nil
+    -- Check for a note reference under the cursor
+    local cursor_link, link_name, _ = util.parse_cursor_link()
+    if cursor_link and link_name then
+      note = client:create_note { title = link_name, no_write = true }
+    else
+      local title = util.input("Enter title or path (optional): ", { completion = "file" })
+      if not title then
+        log.warn "Aborted"
+        return
+      elseif title == "" then
+        title = nil
+      end
+      note = client:create_note { title = title, no_write = true }
     end
-    note = client:create_note { title = title, no_write = true }
   end
 
   -- Get all subdirectories under vault root recursively
@@ -55,7 +61,8 @@ return function(client, data)
       -- Create note in selected directory
       local target_dir = vault_root / selected_dir
       -- Use the title as the filename and ID, removing any digits at the start
-      local clean_id = note.title:gsub("^%d+%-", ""):lower()
+      local clean_id = note.title or os.date "%Y%m%d%H%M%S"
+      clean_id = clean_id:gsub("^%d+%-", ""):lower()
       note.id = clean_id
       note.path = target_dir / Path.new(clean_id):with_suffix ".md"
       note.aliases = {} -- Set empty aliases

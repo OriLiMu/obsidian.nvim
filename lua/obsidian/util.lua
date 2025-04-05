@@ -754,6 +754,10 @@ end
 util.smart_action = function()
   -- follow link if possible
   if util.cursor_on_markdown_link(nil, nil, true) then
+    local link = util.parse_cursor_link()
+    if link and (link[1] == "" or link[1] == nil) then
+      return "<cmd>ObsidianNew<CR>"
+    end
     return "<cmd>ObsidianFollowLink<CR>"
   end
 
