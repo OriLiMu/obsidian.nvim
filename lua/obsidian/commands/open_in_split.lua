@@ -16,25 +16,30 @@ local function open_in_split(client)
     log.info("Number of notes found: %d", #notes)
 
     if #notes > 0 then
-      -- Store current window and buffer info
-      local current_win = vim.api.nvim_get_current_win()
-      local current_buf = vim.api.nvim_win_get_buf(current_win)
-      local current_name = vim.api.nvim_buf_get_name(current_buf)
-      log.info("Current window ID: %d, buffer: %d, file: %s", current_win, current_buf, current_name)
+      -- Store current window and buffer info before split
+      local original_win = vim.api.nvim_get_current_win()
+      local original_buf = vim.api.nvim_win_get_buf(original_win)
+      local original_name = vim.api.nvim_buf_get_name(original_buf)
+      log.info("Original window ID: %d, buffer: %d, file: %s", original_win, original_buf, original_name)
 
-      client:open_note(notes[1], {
-        open_strategy = "vsplit",
-      })
-      log.info "Note opened in vsplit"
-
-      -- Get the newly created window and buffer info
+      -- Create a new window first
+      vim.cmd "vsplit"
       local new_win = vim.api.nvim_get_current_win()
+      log.info("Created new window ID: %d", new_win)
+
+      -- Open note in the new window
+      client:open_note(notes[1], {
+        open_strategy = "current",
+      })
+      log.info "Note opened in current window"
+
+      -- Get the new buffer info after note is opened
       local new_buf = vim.api.nvim_win_get_buf(new_win)
       local new_name = vim.api.nvim_buf_get_name(new_buf)
       log.info("New window ID: %d, buffer: %d, file: %s", new_win, new_buf, new_name)
 
       -- Set the keymap if files are different
-      if new_name ~= current_name then
+      if new_name ~= original_name then
         log.info("Different files detected, setting up 'q' keymap for window %d", new_win)
         vim.keymap.set("n", "q", function()
           log.info("'q' pressed, attempting to close window %d", new_win)
