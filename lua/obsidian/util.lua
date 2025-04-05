@@ -754,15 +754,27 @@ end
 util.smart_action = function()
   -- follow link if possible
   if util.cursor_on_markdown_link(nil, nil, true) then
-    local link = util.parse_cursor_link()
-    if link and (link[1] == "" or link[1] == nil) then
-      return "<cmd>ObsidianNew<CR>"
+    local open, close, link_type = util.cursor_on_markdown_link(nil, nil, true)
+    local link_location, link_name, link_type = util.parse_cursor_link()
+
+    -- 检查文件是否存在于 vault 中
+    local client = require("obsidian").get_client()
+    if client then
+      local notes = { client:resolve_note(link_location) }
+      if #notes > 0 then
+        log.info "文件已存在，触发 ObsidianFollowLink"
+        return "<cmd>ObsidianFollowLink<CR>"
+      end
     end
-    return "<cmd>ObsidianFollowLink<CR>"
+
+    -- 如果文件不存在，且链接为空，则创建新文件
+    log.info "检测到空链接，触发 ObsidianNew"
+    return "<cmd>ObsidianNew<CR>"
   end
 
   -- toggle task if possible
   -- cycles through your custom UI checkboxes, default: [ ] [~] [>] [x]
+  log.info "不在链接上，触发 ObsidianToggleCheckbox"
   return "<cmd>ObsidianToggleCheckbox<CR>"
 end
 
