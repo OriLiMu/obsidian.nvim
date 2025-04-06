@@ -175,6 +175,9 @@ function M.update_links_window(client)
   -- 创建映射表，从显示文本映射到原始链接
   M.links_mapping = {}
 
+  -- Track unique display texts
+  local unique_display_texts = {}
+
   for i, link_data in ipairs(sorted_links) do
     -- 处理链接文本，移除方括号
     local display_text = link_data.text
@@ -190,10 +193,13 @@ function M.update_links_window(client)
       display_text = display_text:sub(1, 27) .. "..."
     end
 
-    -- 保存映射关系
-    M.links_mapping[display_text] = link_data.text
-
-    table.insert(content, display_text)
+    -- Only add if this display text hasn't been seen before
+    if not unique_display_texts[display_text] then
+      -- 保存映射关系
+      M.links_mapping[display_text] = link_data.text
+      unique_display_texts[display_text] = true
+      table.insert(content, display_text)
+    end
   end
 
   if #content == 2 then
@@ -254,10 +260,18 @@ function M.update_backlinks_window(client)
       if vim.tbl_isempty(backlinks) then
         table.insert(content, "No backlinks found")
       else
+        -- Track unique backlink filenames
+        local unique_backlinks = {}
+
         for _, backlink in ipairs(backlinks) do
           -- 获取文件名（不包含路径）
           local display_name = vim.fn.fnamemodify(tostring(backlink.path), ":t")
-          table.insert(content, display_name)
+
+          -- Only add if this filename hasn't been seen before
+          if not unique_backlinks[display_name] then
+            unique_backlinks[display_name] = true
+            table.insert(content, display_name)
+          end
         end
       end
 
