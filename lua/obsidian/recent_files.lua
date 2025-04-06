@@ -227,6 +227,13 @@ function M.update_backlinks_window(client)
   if not note then
     table.insert(content, "Not in a note")
   else
+    -- 设置缓冲区为可修改
+    vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
+    -- 先显示初始内容
+    vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
+    -- 设置回只读
+    vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
+
     -- 异步查找反向链接
     client:find_backlinks_async(note, function(backlinks)
       if vim.tbl_isempty(backlinks) then
@@ -250,16 +257,6 @@ function M.update_backlinks_window(client)
     end)
   end
 
-  -- 设置缓冲区为可修改
-  vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
-  -- 先显示加载内容
-  if #content == 2 then
-    table.insert(content, "Loading backlinks...")
-  end
-  vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
-  -- 设置回只读
-  vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
-
   -- 设置语法高亮
   vim.api.nvim_buf_call(backlinks_buf, function()
     vim.cmd [[
@@ -267,13 +264,11 @@ function M.update_backlinks_window(client)
       syntax match BacklinksTitle /^ Backlinks$/
       syntax match BacklinksDivider /^━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$/
       syntax match BacklinksNoLinks /^No backlinks found$/
-      syntax match BacklinksLoading /^Loading backlinks...$/
       syntax match BacklinksPath /.*$/
 
       highlight BacklinksTitle guifg=#bb9af7 gui=bold
       highlight BacklinksDivider guifg=#3b4261
       highlight BacklinksNoLinks guifg=#737aa2
-      highlight BacklinksLoading guifg=#737aa2
       highlight BacklinksPath guifg=#a9b1d6
     ]]
   end)
@@ -388,7 +383,6 @@ function M.create_sidebar_windows(client, current_win)
       line ~= " Backlinks"
       and line ~= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       and line ~= "No backlinks found"
-      and line ~= "Loading backlinks..."
       and line ~= "Not in a note"
     then
       -- 获取当前笔记
