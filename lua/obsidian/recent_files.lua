@@ -159,7 +159,7 @@ function M.update_links_window(client)
 
   -- 准备显示内容
   local content = {
-    " Links",
+    "🔗→ Links",
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
   }
 
@@ -217,7 +217,7 @@ function M.update_links_window(client)
   vim.api.nvim_buf_call(links_buf, function()
     vim.cmd [[
       syntax clear
-      syntax match LinksTitle /^ Links$/
+      syntax match LinksTitle /^🔗→ Links$/
       syntax match LinksDivider /^━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$/
       syntax match LinksNoLinks /^No links found$/
       syntax match LinksPath /.*$/
@@ -239,7 +239,7 @@ function M.update_backlinks_window(client)
 
   -- 准备显示内容
   local content = {
-    " Backlinks",
+    "→🔗 Backlinks",
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
   }
 
@@ -288,7 +288,7 @@ function M.update_backlinks_window(client)
   vim.api.nvim_buf_call(backlinks_buf, function()
     vim.cmd [[
       syntax clear
-      syntax match BacklinksTitle /^ Backlinks$/
+      syntax match BacklinksTitle /^→🔗 Backlinks$/
       syntax match BacklinksDivider /^━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$/
       syntax match BacklinksNoLinks /^No backlinks found$/
       syntax match BacklinksPath /.*$/
@@ -343,7 +343,7 @@ function M.create_sidebar_windows(client, current_win)
 
   -- 创建 Links 窗口（顶部）
   local links_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(links_buf, "Links")
+  vim.api.nvim_buf_set_name(links_buf, "🔗→ Links")
   vim.api.nvim_win_set_buf(sidebar_win, links_buf)
   M.sidebar.links_win = sidebar_win
   M.sidebar.links_buf = links_buf
@@ -367,7 +367,7 @@ function M.create_sidebar_windows(client, current_win)
   vim.keymap.set("n", "<CR>", function()
     local line = vim.api.nvim_get_current_line()
     if
-      line ~= " Links"
+      line ~= "🔗→ Links"
       and line ~= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       and line ~= "No links found"
     then
@@ -387,7 +387,7 @@ function M.create_sidebar_windows(client, current_win)
   vim.cmd "split"
   local backlinks_win = vim.api.nvim_get_current_win()
   local backlinks_buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(backlinks_buf, "Backlinks")
+  vim.api.nvim_buf_set_name(backlinks_buf, "→🔗 Backlinks")
   vim.api.nvim_win_set_buf(backlinks_win, backlinks_buf)
   M.sidebar.backlinks_win = backlinks_win
   M.sidebar.backlinks_buf = backlinks_buf
@@ -411,7 +411,7 @@ function M.create_sidebar_windows(client, current_win)
   vim.keymap.set("n", "<CR>", function()
     local line = vim.api.nvim_get_current_line()
     if
-      line ~= " Backlinks"
+      line ~= "→🔗 Backlinks"
       and line ~= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       and line ~= "No backlinks found"
       and line ~= "Not in a note"
