@@ -290,8 +290,8 @@ function M.create_sidebar_windows(client, current_win)
   vim.cmd "botright vsplit"
   local sidebar_win = vim.api.nvim_get_current_win()
 
-  -- 设置初始宽度为窗口的30%
-  local initial_width = math.floor(vim.o.columns * 0.3)
+  -- 设置初始宽度为窗口的20%
+  local initial_width = math.floor(vim.o.columns * 0.2)
   vim.api.nvim_win_set_width(sidebar_win, initial_width)
 
   -- 创建 Links 窗口（顶部）
