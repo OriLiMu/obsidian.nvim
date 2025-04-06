@@ -16,6 +16,7 @@ local module_lookups = {
   Note = "obsidian.note",
   Path = "obsidian.path",
   pickers = "obsidian.pickers",
+  recent_files = "obsidian.recent_files",
   search = "obsidian.search",
   templates = "obsidian.templates",
   ui = "obsidian.ui",
@@ -98,6 +99,9 @@ obsidian.setup = function(opts)
   -- Install commands.
   -- These will be available across all buffers, not just note buffers in the vault.
   obsidian.commands.install(client)
+
+  -- 设置最近文件功能
+  obsidian.recent_files.setup(client)
 
   -- Register cmp sources.
   if opts.completion.nvim_cmp then

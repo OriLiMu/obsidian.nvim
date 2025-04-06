@@ -28,6 +28,9 @@ local command_lookups = {
   ObsidianDebug = "obsidian.commands.debug",
   ObsidianTOC = "obsidian.commands.toc",
   ObsidianOpenInSplit = "obsidian.commands.open_in_split",
+  ObsidianRecentFiles = "obsidian.commands.recent_files",
+  ObsidianCloseRecentFiles = "obsidian.commands.close_recent_files",
+  ObsidianToggleRecentFiles = "obsidian.commands.toggle_recent_files",
 }
 
 local M = setmetatable({
@@ -199,5 +202,11 @@ M.register("ObsidianOpenInSplit", {
     open_in_split(client)
   end,
 })
+
+M.register("ObsidianRecentFiles", { opts = { nargs = 0, desc = "显示最近文件窗口" } })
+
+M.register("ObsidianCloseRecentFiles", { opts = { nargs = 0, desc = "关闭最近文件窗口" } })
+
+M.register("ObsidianToggleRecentFiles", { opts = { nargs = 0, desc = "切换最近文件窗口显示状态" } })
 
 return M

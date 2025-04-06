@@ -32,6 +32,7 @@ local config = {}
 ---@field ui obsidian.config.UIOpts | table<string, any>
 ---@field attachments obsidian.config.AttachmentsOpts
 ---@field callbacks obsidian.config.CallbackConfig
+---@field recent_files obsidian.config.RecentFilesOpts
 config.ClientOpts = {}
 
 --- Get defaults.
@@ -65,6 +66,7 @@ config.ClientOpts.default = function()
     ui = config.UIOpts.default(),
     attachments = config.AttachmentsOpts.default(),
     callbacks = config.CallbackConfig.default(),
+    recent_files = config.RecentFilesOpts.default(),
   }
 end
 
@@ -504,6 +506,21 @@ config.CallbackConfig = {}
 ---@return obsidian.config.CallbackConfig
 config.CallbackConfig.default = function()
   return {}
+end
+
+---@class obsidian.config.RecentFilesOpts
+---@field enabled boolean 是否启用最近文件功能
+---@field width string 侧边栏宽度，例如 "30%"
+---@field max_files integer 显示的最大文件数量
+config.RecentFilesOpts = {}
+
+---@return obsidian.config.RecentFilesOpts
+config.RecentFilesOpts.default = function()
+  return {
+    enabled = true,
+    width = "30%",
+    max_files = 5,
+  }
 end
 
 return config

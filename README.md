@@ -91,6 +91,12 @@ _Keep in mind this plugin is not meant to replace Obsidian, but to complement it
 
 - `:ObsidianTOC` to load the table of contents of the current note into a picker list.
 
+- `:ObsidianRecentFiles` to open a sidebar displaying recently accessed Markdown files.
+
+- `:ObsidianCloseRecentFiles` to close the recent files sidebar.
+
+- `:ObsidianToggleRecentFiles` to toggle the recent files sidebar.
+
 ### Demo
 
 [![2024-01-31 14 22 52](https://github.com/epwalsh/obsidian.nvim/assets/8812459/2986e1d2-13e8-40e2-9c9e-75691a3b662e)](https://github.com/epwalsh/obsidian.nvim/assets/8812459/2986e1d2-13e8-40e2-9c9e-75691a3b662e)
@@ -215,7 +221,7 @@ If you choose to use any of these you should include them in the "dependencies" 
 
 ### Configuration options
 
-This is a complete list of all of the options that can be passed to `require("obsidian").setup()`. The settings below are *not necessarily the defaults, but represent reasonable default settings*. Please read each option carefully and customize it to your needs:
+This is a complete list of all of the options that can be passed to `require("obsidian").setup()`. The settings below are _not necessarily the defaults, but represent reasonable default settings_. Please read each option carefully and customize it to your needs:
 
 ```lua
 {
@@ -349,6 +355,16 @@ This is a complete list of all of the options that can be passed to `require("ob
 
   -- Either 'wiki' or 'markdown'.
   preferred_link_style = "wiki",
+
+  -- Optional, configuration for the recent files sidebar
+  recent_files = {
+    -- Whether to enable the recent files sidebar
+    enabled = true,
+    -- Width of the sidebar, can be a string like "30%" or a number of columns
+    width = "30%",
+    -- Maximum number of files to show in the sidebar
+    max_files = 5,
+  },
 
   -- Optional, boolean or a function that takes a filename and returns a boolean.
   -- `true` indicates that you don't want obsidian.nvim to manage frontmatter.
@@ -542,6 +558,13 @@ This is a complete list of all of the options that can be passed to `require("ob
       return string.format("![%s](%s)", path.name, path)
     end,
   },
+
+  -- Optional, recent files options
+  recent_files = {
+    enabled = true,
+    width = "30%",
+    max_files = 5
+  },
 }
 ```
 
@@ -592,7 +615,6 @@ config = {
 ```
 
 obsidian.nvim also supports "dynamic" workspaces. These are simply workspaces where the `path` is set to a Lua function (that returns a path) instead of a hard-coded path. This can be useful in several scenarios, such as when you want a workspace whose `path` is always set to the parent directory of the current buffer:
-
 
 ```lua
 config = {
@@ -728,7 +750,7 @@ templates = {
 
 ### Usage outside of a workspace or vault
 
-It's possible to configure obsidian.nvim to work on individual markdown files outside of a regular workspace / Obsidian vault by configuring a "dynamic" workspace. To do so you just need to add a special workspace with a function for the `path` field (instead of a string), which should return a *parent* directory of the current buffer. This tells obsidian.nvim to use that directory as the workspace `path` and `root` (vault root) when the buffer is not located inside another fixed workspace.
+It's possible to configure obsidian.nvim to work on individual markdown files outside of a regular workspace / Obsidian vault by configuring a "dynamic" workspace. To do so you just need to add a special workspace with a function for the `path` field (instead of a string), which should return a _parent_ directory of the current buffer. This tells obsidian.nvim to use that directory as the workspace `path` and `root` (vault root) when the buffer is not located inside another fixed workspace.
 
 For example, to extend the configuration above this way:
 
