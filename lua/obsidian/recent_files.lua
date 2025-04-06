@@ -250,34 +250,37 @@ function M.update_backlinks_window(client)
   else
     -- 异步查找反向链接
     client:find_backlinks_async(note, function(backlinks)
-      if not vim.api.nvim_buf_is_valid(backlinks_buf) then
-        return
-      end
+      -- 使用schedule_wrap来包装缓冲区操作
+      vim.schedule(function()
+        if not vim.api.nvim_buf_is_valid(backlinks_buf) then
+          return
+        end
 
-      if vim.tbl_isempty(backlinks) then
-        table.insert(content, "No backlinks found")
-      else
-        -- Track unique backlink filenames
-        local unique_backlinks = {}
+        if vim.tbl_isempty(backlinks) then
+          table.insert(content, "No backlinks found")
+        else
+          -- Track unique backlink filenames
+          local unique_backlinks = {}
 
-        for _, backlink in ipairs(backlinks) do
-          -- 获取文件名（不包含路径）
-          local display_name = vim.fn.fnamemodify(tostring(backlink.path), ":t")
+          for _, backlink in ipairs(backlinks) do
+            -- 获取文件名（不包含路径）
+            local display_name = vim.fn.fnamemodify(tostring(backlink.path), ":t")
 
-          -- Only add if this filename hasn't been seen before
-          if not unique_backlinks[display_name] then
-            unique_backlinks[display_name] = true
-            table.insert(content, display_name)
+            -- Only add if this filename hasn't been seen before
+            if not unique_backlinks[display_name] then
+              unique_backlinks[display_name] = true
+              table.insert(content, display_name)
+            end
           end
         end
-      end
 
-      -- 设置缓冲区为可修改
-      vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
-      -- 更新内容
-      vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
-      -- 设置回只读
-      vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
+        -- 设置缓冲区为可修改
+        vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
+        -- 更新内容
+        vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
+        -- 设置回只读
+        vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
+      end)
     end)
   end
 
