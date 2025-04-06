@@ -248,15 +248,12 @@ function M.update_backlinks_window(client)
   if not note then
     table.insert(content, "Not in a note")
   else
-    -- 设置缓冲区为可修改
-    vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
-    -- 先显示初始内容
-    vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
-    -- 设置回只读
-    vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
-
     -- 异步查找反向链接
     client:find_backlinks_async(note, function(backlinks)
+      if not vim.api.nvim_buf_is_valid(backlinks_buf) then
+        return
+      end
+
       if vim.tbl_isempty(backlinks) then
         table.insert(content, "No backlinks found")
       else
@@ -276,13 +273,11 @@ function M.update_backlinks_window(client)
       end
 
       -- 设置缓冲区为可修改
-      if vim.api.nvim_buf_is_valid(backlinks_buf) then
-        vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
-        -- 更新内容
-        vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
-        -- 设置回只读
-        vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
-      end
+      vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", true)
+      -- 更新内容
+      vim.api.nvim_buf_set_lines(backlinks_buf, 0, -1, false, content)
+      -- 设置回只读
+      vim.api.nvim_buf_set_option(backlinks_buf, "modifiable", false)
     end)
   end
 
