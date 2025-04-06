@@ -183,7 +183,7 @@ function M.update_links_window(client)
     display_text = display_text:gsub("%[%[(.-)%]%]", "%1")
 
     -- 移除Markdown风格的链接: [text](url) -> text
-    display_text = display_text:gsub("%[(.-)%]%(.-%))", "%1")
+    display_text = display_text:gsub("%[(.-)%]%(.-%)%)", "%1")
 
     -- 显示链接文本，最多显示30个字符
     if #display_text > 30 then
