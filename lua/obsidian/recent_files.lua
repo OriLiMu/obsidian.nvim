@@ -124,11 +124,11 @@ function M.update_recent_files_window(client)
       syntax match RecentFilePath /.*$/
       syntax match RecentFileFirst /^1.*$/
 
-      highlight RecentFileTitle guifg=#7aa2f7 gui=bold
+      highlight RecentFileTitle guifg=#3D9970 gui=bold
       highlight RecentFileDivider guifg=#3b4261
-      highlight RecentFileNumber guifg=#737aa2
-      highlight RecentFilePath guifg=#a9b1d6
-      highlight RecentFileFirst guifg=#111111 guibg=#7FDBFF
+      highlight RecentFileNumber guifg=#FF851B
+      highlight RecentFilePath guifg=#2ECC40
+      highlight RecentFileFirst guifg=#111111 guibg=#01FF70
     ]]
   end)
 end
@@ -201,10 +201,10 @@ function M.update_links_window(client)
       syntax match LinksNoLinks /^No links found$/
       syntax match LinksPath /.*$/
 
-      highlight LinksTitle guifg=#7dcfff gui=bold
+      highlight LinksTitle guifg=#FF4136 gui=bold
       highlight LinksDivider guifg=#3b4261
       highlight LinksNoLinks guifg=#737aa2
-      highlight LinksPath guifg=#a9b1d6
+      highlight LinksPath guifg=#FFDC00
     ]]
   end)
 end
@@ -266,10 +266,10 @@ function M.update_backlinks_window(client)
       syntax match BacklinksNoLinks /^No backlinks found$/
       syntax match BacklinksPath /.*$/
 
-      highlight BacklinksTitle guifg=#bb9af7 gui=bold
+      highlight BacklinksTitle guifg=#FF851B gui=bold
       highlight BacklinksDivider guifg=#3b4261
       highlight BacklinksNoLinks guifg=#737aa2
-      highlight BacklinksPath guifg=#a9b1d6
+      highlight BacklinksPath guifg=#01FF70
     ]]
   end)
 end
