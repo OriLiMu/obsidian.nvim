@@ -290,7 +290,11 @@ function M.create_sidebar_windows(client, current_win)
   vim.cmd "botright vsplit"
   local sidebar_win = vim.api.nvim_get_current_win()
 
-  -- 设置初始宽度为窗口的20%
+  -- 使用vim命令直接强制设置宽度为20%
+  vim.cmd "let &winwidth = 20"
+  vim.cmd("vertical resize " .. math.floor(vim.o.columns * 0.2))
+
+  -- 使用API再次确保宽度正确
   local initial_width = math.floor(vim.o.columns * 0.2)
   vim.api.nvim_win_set_width(sidebar_win, initial_width)
 
@@ -537,9 +541,16 @@ function M.setup(client)
         local buf = vim.api.nvim_win_get_buf(win)
         local name = vim.api.nvim_buf_get_name(buf)
         if name:match "Links$" then
-          -- 当窗口大小调整时，保持宽度为20%
+          -- 当窗口大小调整时，强制设置为20%
+          vim.api.nvim_set_current_win(win)
+          vim.cmd("vertical resize " .. math.floor(vim.o.columns * 0.2))
+
+          -- 使用API再次确保宽度正确
           local resize_width = math.floor(vim.o.columns * 0.2)
           vim.api.nvim_win_set_width(win, resize_width)
+
+          -- 回到原来的窗口
+          vim.cmd "wincmd p"
           break
         end
       end
