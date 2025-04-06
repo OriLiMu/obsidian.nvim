@@ -286,17 +286,38 @@ function M.create_sidebar_windows(client, current_win)
     return false
   end
 
+  -- 输出调试信息：初始屏幕宽度
+  log.debug("创建侧边栏：屏幕总宽度 = " .. vim.o.columns)
+  log.debug("目标宽度 = " .. math.floor(vim.o.columns * 0.2))
+
+  -- 保存原始设置
+  local old_ea = vim.o.equalalways
+  -- 禁用equalalways以防止Neovim自动平衡窗口大小
+  vim.o.equalalways = false
+
   -- 创建右侧边框
   vim.cmd "botright vsplit"
   local sidebar_win = vim.api.nvim_get_current_win()
 
+  -- 强制性设置窗口最小宽度和最大宽度
+  vim.api.nvim_win_set_option(sidebar_win, "winfixwidth", true)
+
   -- 使用vim命令直接强制设置宽度为20%
-  vim.cmd "let &winwidth = 20"
-  vim.cmd("vertical resize " .. math.floor(vim.o.columns * 0.2))
+  local target_width = math.floor(vim.o.columns * 0.2)
+  local width_cmd = "vertical resize " .. target_width
+  log.debug("执行宽度命令: " .. width_cmd)
+  vim.cmd(width_cmd)
 
   -- 使用API再次确保宽度正确
-  local initial_width = math.floor(vim.o.columns * 0.2)
-  vim.api.nvim_win_set_width(sidebar_win, initial_width)
+  log.debug("使用API设置宽度为: " .. target_width)
+  vim.api.nvim_win_set_width(sidebar_win, target_width)
+
+  -- 恢复原始设置
+  vim.o.equalalways = old_ea
+
+  -- 检查设置后的实际宽度
+  local actual_width = vim.api.nvim_win_get_width(sidebar_win)
+  log.debug("设置后的实际宽度: " .. actual_width)
 
   -- 创建 Links 窗口（顶部）
   local links_buf = vim.api.nvim_create_buf(false, true)
@@ -536,18 +557,33 @@ function M.setup(client)
   vim.api.nvim_create_autocmd("VimResized", {
     group = recent_files_group,
     callback = function()
+      -- 输出调试信息：调整后的屏幕宽度
+      log.debug("窗口大小改变：屏幕总宽度 = " .. vim.o.columns)
+      log.debug("调整后目标宽度 = " .. math.floor(vim.o.columns * 0.2))
+
       -- 查找侧边栏窗口（Links窗口是最外层窗口）
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         local buf = vim.api.nvim_win_get_buf(win)
         local name = vim.api.nvim_buf_get_name(buf)
         if name:match "Links$" then
+          -- 获取调整前的宽度
+          local before_width = vim.api.nvim_win_get_width(win)
+          log.debug("调整前宽度: " .. before_width)
+
           -- 当窗口大小调整时，强制设置为20%
           vim.api.nvim_set_current_win(win)
-          vim.cmd("vertical resize " .. math.floor(vim.o.columns * 0.2))
+          local resize_cmd = "vertical resize " .. math.floor(vim.o.columns * 0.2)
+          log.debug("执行调整命令: " .. resize_cmd)
+          vim.cmd(resize_cmd)
 
           -- 使用API再次确保宽度正确
           local resize_width = math.floor(vim.o.columns * 0.2)
+          log.debug("使用API设置宽度为: " .. resize_width)
           vim.api.nvim_win_set_width(win, resize_width)
+
+          -- 检查设置后的实际宽度
+          local after_width = vim.api.nvim_win_get_width(win)
+          log.debug("调整后实际宽度: " .. after_width)
 
           -- 回到原来的窗口
           vim.cmd "wincmd p"
@@ -556,6 +592,42 @@ function M.setup(client)
       end
     end,
   })
+
+  -- 创建一个定时器，定期检查和修正侧边栏宽度
+  local timer = vim.loop.new_timer()
+  timer:start(
+    1000,
+    2000,
+    vim.schedule_wrap(function()
+      -- 查找侧边栏窗口（Links窗口是最外层窗口）
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local name = vim.api.nvim_buf_get_name(buf)
+        if name:match "Links$" then
+          -- 检查当前宽度
+          local current_width = vim.api.nvim_win_get_width(win)
+          local target_width = math.floor(vim.o.columns * 0.2)
+
+          -- 如果宽度不正确，调整它
+          if current_width ~= target_width then
+            log.debug("定时器修正：当前宽度 = " .. current_width .. ", 目标宽度 = " .. target_width)
+
+            -- 保存当前窗口
+            local current_win = vim.api.nvim_get_current_win()
+
+            -- 切换到侧边栏窗口并调整宽度
+            vim.api.nvim_set_current_win(win)
+            vim.cmd("vertical resize " .. target_width)
+
+            -- 返回原窗口
+            vim.api.nvim_set_current_win(current_win)
+          end
+
+          break
+        end
+      end
+    end)
+  )
 end
 
 -- 关闭所有侧边栏窗口
