@@ -756,6 +756,10 @@ util.smart_action = function()
   if util.cursor_on_markdown_link(nil, nil, true) then
     local open, close, link_type = util.cursor_on_markdown_link(nil, nil, true)
     local link_location, link_name, link_type = util.parse_cursor_link()
+    -- check here if the link is a web link
+    if link_type == "URL" or string.match(link_location, "^https?://") then
+      return "<cmd>ObsidianFollowLink<CR>"
+    end
 
     -- 检查文件是否存在于 vault 中
     local client = require("obsidian").get_client()
