@@ -172,12 +172,27 @@ function M.update_links_window(client)
     return a.line < b.line
   end)
 
+  -- 创建映射表，从显示文本映射到原始链接
+  M.links_mapping = {}
+
   for i, link_data in ipairs(sorted_links) do
-    -- 显示链接文本，最多显示30个字符
+    -- 处理链接文本，移除方括号
     local display_text = link_data.text
+
+    -- 移除Wiki风格的方括号: [[note]] -> note
+    display_text = display_text:gsub("%[%[(.-)%]%]", "%1")
+
+    -- 移除Markdown风格的链接: [text](url) -> text
+    display_text = display_text:gsub("%[(.-)%]%(.-%))", "%1")
+
+    -- 显示链接文本，最多显示30个字符
     if #display_text > 30 then
       display_text = display_text:sub(1, 27) .. "..."
     end
+
+    -- 保存映射关系
+    M.links_mapping[display_text] = link_data.text
+
     table.insert(content, display_text)
   end
 
@@ -344,10 +359,14 @@ function M.create_sidebar_windows(client, current_win)
       and line ~= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       and line ~= "No links found"
     then
-      -- 切换到主窗口
-      vim.api.nvim_set_current_win(current_win)
-      -- 在主窗口中打开链接
-      client:follow_link_async(line)
+      -- 从映射表中获取原始链接
+      local original_link = M.links_mapping[line]
+      if original_link then
+        -- 切换到主窗口
+        vim.api.nvim_set_current_win(current_win)
+        -- 在主窗口中打开链接
+        client:follow_link_async(original_link)
+      end
     end
   end, { buffer = links_buf, silent = true })
   vim.keymap.set("n", "q", ":q<CR>", { buffer = links_buf, silent = true })
