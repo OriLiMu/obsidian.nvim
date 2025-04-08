@@ -34,7 +34,7 @@ end
 
 ---@return string[]
 local dumps
-dumps = function(x, indent, order, key)
+dumps = function(x, indent, order)
   local indent_str = string.rep(" ", indent)
 
   if type(x) == "string" then
@@ -57,24 +57,6 @@ dumps = function(x, indent, order, key)
   if type(x) == "table" then
     local out = {}
 
-    -- Special handling for tags array - convert to inline format
-    if key == "tags" and util.tbl_is_array(x) then
-      local items = {}
-      for _, v in ipairs(x) do
-        if type(v) == "string" then
-          if should_quote(v) then
-            v = string.gsub(v, '"', '\\"')
-            table.insert(items, [["]] .. v .. [["]])
-          else
-            table.insert(items, v)
-          end
-        else
-          table.insert(items, tostring(v))
-        end
-      end
-      return { indent_str .. "[" .. table.concat(items, ", ") .. "]" }
-    end
-
     if util.tbl_is_array(x) then
       for _, v in ipairs(x) do
         local item_lines = dumps(v, indent + 2)
@@ -93,11 +75,11 @@ dumps = function(x, indent, order, key)
       for _, k in ipairs(keys) do
         local v = x[k]
         if type(v) == "string" or type(v) == "boolean" or type(v) == "number" then
-          table.insert(out, indent_str .. tostring(k) .. ": " .. dumps(v, 0, order)[1])
+          table.insert(out, indent_str .. tostring(k) .. ": " .. dumps(v, 0)[1])
         elseif type(v) == "table" and vim.tbl_isempty(v) then
           table.insert(out, indent_str .. tostring(k) .. ": []")
         else
-          local item_lines = dumps(v, indent + 2, order, k)
+          local item_lines = dumps(v, indent + 2)
           table.insert(out, indent_str .. tostring(k) .. ":")
           for _, line in ipairs(item_lines) do
             table.insert(out, line)
