@@ -752,28 +752,22 @@ util.gf_passthrough = function()
 end
 
 util.smart_action = function()
+  local log = require "obsidian.log"
+  
   -- follow link if possible
   if util.cursor_on_markdown_link(nil, nil, true) then
-    local open, close, link_type = util.cursor_on_markdown_link(nil, nil, true)
     local link_location, link_name, link_type = util.parse_cursor_link()
+    
     -- check here if the link is a web link
-    if link_type == "URL" or string.match(link_location, "^https?://") then
+    if link_type == "URL" or string.match(link_location or "", "^https?://") then
+      log.info "检测到URL链接，触发 ObsidianFollowLink"
       return "<cmd>ObsidianFollowLink<CR>"
     end
 
-    -- 检查文件是否存在于 vault 中
-    local client = require("obsidian").get_client()
-    if client then
-      local notes = { client:resolve_note(link_location) }
-      if #notes > 0 then
-        log.info "文件已存在，触发 ObsidianFollowLink"
-        return "<cmd>ObsidianFollowLink<CR>"
-      end
-    end
-
-    -- 如果文件不存在，且链接为空，则创建新文件
-    log.info "检测到空链接，触发 ObsidianNew"
-    return "<cmd>ObsidianNew<CR>"
+    -- 对于所有非URL链接（包括带锚点的链接），都直接调用 ObsidianFollowLink
+    -- ObsidianFollowLink 本身已经有完善的锚点处理逻辑，能正确分离文件名和锚点
+    log.info("检测到链接 '%s'，触发 ObsidianFollowLink", link_location or "未知")
+    return "<cmd>ObsidianFollowLink<CR>"
   end
 
   -- toggle task if possible
