@@ -1789,6 +1789,13 @@ Client.create_note = function(self, opts)
 
   local new_title, new_id, path = self:parse_title_id_path(opts.title, opts.id, opts.dir)
 
+  -- Check if file already exists
+  if path:exists() then
+    local relative_path = self:vault_relative_path(path) or tostring(path)
+    log.warn("Note '%s' already exists. Creation cancelled.", relative_path)
+    return nil
+  end
+
   -- Add title as an alias.
   ---@type string[]
   ---@diagnostic disable-next-line: assign-type-mismatch

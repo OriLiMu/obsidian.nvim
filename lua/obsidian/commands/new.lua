@@ -63,8 +63,17 @@ return function(client, data)
       -- Use the title as the filename and ID, removing any digits at the start
       local clean_id = note.title or os.date "%Y%m%d%H%M%S"
       clean_id = clean_id:gsub("^%d+%-", "")
+      local note_path = target_dir / Path.new(clean_id):with_suffix ".md"
+
+      -- Check if file already exists
+      if note_path:exists() then
+        local relative_path = client:vault_relative_path(note_path) or tostring(note_path)
+        log.warn("Note '%s' already exists. Creation cancelled.", relative_path)
+        return
+      end
+
       note.id = clean_id
-      note.path = target_dir / Path.new(clean_id):with_suffix ".md"
+      note.path = note_path
       note.aliases = {} -- Set empty aliases
 
       -- Open the note in a new buffer
