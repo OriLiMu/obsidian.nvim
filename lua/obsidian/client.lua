@@ -1712,19 +1712,13 @@ Client.parse_title_id_path = function(self, title, id, dir)
     end
   else
     local bufpath = Path.buffer(0):resolve()
-    if
-      self.opts.new_notes_location == config.NewNotesLocation.current_dir
-      -- note is actually in the workspace.
-      and self.dir:is_parent_of(bufpath)
-      -- note is not in dailies folder
-      and (self.opts.daily_notes.folder == nil or not (self.dir / self.opts.daily_notes.folder):is_parent_of(bufpath))
-    then
+    -- Check if current buffer is in the vault (including subdirectories)
+    if self.dir:is_parent_of(bufpath) then
+      -- If in vault, create note in the same directory as current file
       base_dir = self.buf_dir or assert(bufpath:parent())
     else
-      base_dir = self.dir
-      if self.opts.notes_subdir then
-        base_dir = base_dir / self.opts.notes_subdir
-      end
+      -- If not in vault, create note in vault_root/Ori
+      base_dir = self.dir / "Ori"
     end
   end
 

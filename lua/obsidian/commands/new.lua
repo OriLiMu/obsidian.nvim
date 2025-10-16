@@ -25,60 +25,22 @@ return function(client, data)
     end
   end
 
-  -- Get all subdirectories under vault root recursively
-  local vault_root = client:vault_root()
-  local subdirs = {}
-  local function scan_dir(dir)
-    for entry in vim.fs.dir(tostring(dir)) do
-      -- Skip .obsidian directory
-      if entry ~= ".obsidian" then
-        local full_path = dir / entry
-        if vim.fn.isdirectory(tostring(full_path)) == 1 then
-          local rel_path = tostring(full_path:relative_to(vault_root))
-          table.insert(subdirs, rel_path)
-          scan_dir(full_path) -- Recursively scan subdirectories
-        end
-      end
-    end
-  end
-  scan_dir(vault_root)
+  -- Directly create note using the path determined by parse_title_id_path
+  -- The logic now automatically:
+  -- - Creates in current directory if inside vault
+  -- - Creates in vault_root/Ori if outside vault
 
-  -- Use picker to select target directory
-  local picker = client:picker()
-  if not picker then
-    log.err "No picker configured"
+  -- Check if file already exists
+  if note.path:exists() then
+    local relative_path = client:vault_relative_path(note.path) or tostring(note.path)
+    log.warn("Note '%s' already exists. Creation cancelled.", relative_path)
     return
   end
 
-  picker:pick(subdirs, {
-    prompt_title = "Select target directory",
-    callback = function(selected_dir)
-      if not selected_dir then
-        log.warn "No directory selected, aborting"
-        return
-      end
+  -- Reset aliases since we're creating a fresh note
+  note.aliases = {}
 
-      -- Create note in selected directory
-      local target_dir = vault_root / selected_dir
-      -- Use the title as the filename and ID, removing any digits at the start
-      local clean_id = note.title or os.date "%Y%m%d%H%M%S"
-      clean_id = clean_id:gsub("^%d+%-", "")
-      local note_path = target_dir / Path.new(clean_id):with_suffix ".md"
-
-      -- Check if file already exists
-      if note_path:exists() then
-        local relative_path = client:vault_relative_path(note_path) or tostring(note_path)
-        log.warn("Note '%s' already exists. Creation cancelled.", relative_path)
-        return
-      end
-
-      note.id = clean_id
-      note.path = note_path
-      note.aliases = {} -- Set empty aliases
-
-      -- Open the note in a new buffer
-      client:open_note(note, { sync = true })
-      client:write_note_to_buffer(note)
-    end,
-  })
+  -- Open the note in a new buffer
+  client:open_note(note, { sync = true })
+  client:write_note_to_buffer(note)
 end
