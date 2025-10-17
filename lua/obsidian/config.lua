@@ -418,6 +418,7 @@ end
 ---@field highlight_text obsidian.config.UIStyleSpec
 ---@field tags obsidian.config.UIStyleSpec
 ---@field block_ids obsidian.config.UIStyleSpec
+---@field heading obsidian.config.HeadingOpts
 ---@field hl_groups table<string, table>
 config.UIOpts = {}
 
@@ -435,6 +436,18 @@ config.UIOpts = {}
 ---@class obsidian.config.UIStyleSpec
 ---
 ---@field hl_group string
+
+---@class obsidian.config.HeadingOpts
+---@field enabled boolean
+---@field icons obsidian.ui.heading.Icons
+---@field position obsidian.ui.heading.Position
+---@field foregrounds string[]|boolean
+---@field backgrounds string[]|boolean
+---@field width obsidian.ui.heading.Width
+---@field border boolean
+---@field above string
+---@field below string
+---@field custom table<string, obsidian.ui.heading.CustomStyle>
 
 ---@return obsidian.config.UIOpts
 config.UIOpts.default = function()
@@ -455,6 +468,18 @@ config.UIOpts.default = function()
     highlight_text = { hl_group = "ObsidianHighlightText" },
     tags = { hl_group = "ObsidianTag" },
     block_ids = { hl_group = "ObsidianBlockID" },
+    heading = {
+      enabled = false,
+      icons = { "󰲡 ", "󰲣 ", "󰲥 ", "󰲧 ", "󰲩 ", "󰲫 " },
+      position = "overlay",
+      foregrounds = true,
+      backgrounds = true,
+      width = "full",
+      border = false,
+      above = "▄",
+      below = "▀",
+      custom = {},
+    },
     hl_groups = {
       ObsidianTodo = { bold = true, fg = "#f78c6c" },
       ObsidianDone = { bold = true, fg = "#89ddff" },
@@ -467,6 +492,20 @@ config.UIOpts.default = function()
       ObsidianTag = { italic = true, fg = "#89ddff" },
       ObsidianBlockID = { italic = true, fg = "#89ddff" },
       ObsidianHighlightText = { bg = "#75662e" },
+      -- Heading highlight groups
+      ObsidianHeading1 = { bold = true, fg = "#f7768e" },
+      ObsidianHeading2 = { bold = true, fg = "#9ece6a" },
+      ObsidianHeading3 = { bold = true, fg = "#7aa2f7" },
+      ObsidianHeading4 = { bold = true, fg = "#bb9af7" },
+      ObsidianHeading5 = { bold = true, fg = "#e0af68" },
+      ObsidianHeading6 = { bold = true, fg = "#7dcfff" },
+      -- Heading background highlight groups
+      ObsidianHeading1Bg = { bg = "#f7768e20" },
+      ObsidianHeading2Bg = { bg = "#9ece6a20" },
+      ObsidianHeading3Bg = { bg = "#7aa2f720" },
+      ObsidianHeading4Bg = { bg = "#bb9af720" },
+      ObsidianHeading5Bg = { bg = "#e0af6820" },
+      ObsidianHeading6Bg = { bg = "#7dcfff20" },
     },
   }
 end

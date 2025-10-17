@@ -551,6 +551,16 @@ local function update_extmarks(bufnr, ns_id, ui_opts)
 
   local runtime = math.floor((vim.loop.hrtime() - start_time) / 1000000)
   log.debug("Added %d new marks, cleared %d old marks in %dms", n_marks_added, n_marks_cleared, runtime)
+
+  -- Update heading rendering if enabled
+  if ui_opts.heading and ui_opts.heading.enabled then
+    local Heading = require "obsidian.ui.heading"
+    local client = require("obsidian").get_client()
+    if client then
+      local heading_renderer = Heading.new(client, ui_opts)
+      heading_renderer:render(bufnr)
+    end
+  end
 end
 
 ---@param ui_opts obsidian.config.UIOpts
@@ -659,6 +669,16 @@ M.setup = function(workspace, ui_opts)
     callback = function(ev)
       local ns_id = vim.api.nvim_create_namespace(NAMESPACE)
       cache_clear(ev.buf, ns_id)
+
+      -- Clear heading rendering if enabled
+      if ui_opts.heading and ui_opts.heading.enabled then
+        local Heading = require "obsidian.ui.heading"
+        local client = require("obsidian").get_client()
+        if client then
+          local heading_renderer = Heading.new(client, ui_opts)
+          heading_renderer:clear(ev.buf)
+        end
+      end
     end,
   })
 end
