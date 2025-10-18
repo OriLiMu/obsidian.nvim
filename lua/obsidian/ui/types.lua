@@ -8,7 +8,35 @@
 ---@field border boolean
 ---@field above string
 ---@field below string
+---@field indent boolean
+---@field indent_levels table<integer, integer>|boolean
 ---@field custom table<string, obsidian.ui.heading.CustomStyle>
+
+---@class obsidian.ui.table.Config
+---@field enabled boolean
+---@field border string[]
+---@field border_enabled boolean
+---@field cell obsidian.ui.table.Cell
+---@field padding integer
+---@field min_width integer
+---@field alignment_indicator string
+---@field head string
+---@field row string
+---@field filler string
+
+---@alias obsidian.ui.table.Cell
+---| "overlay"
+---| "raw"
+---| "padded"
+---| "trimmed"
+
+---@enum obsidian.ui.table.Alignment
+local Alignment = {
+  left = 'left',
+  right = 'right',
+  center = 'center',
+  default = 'default',
+}
 
 ---@class obsidian.ui.heading.CustomStyle
 ---@field pattern string

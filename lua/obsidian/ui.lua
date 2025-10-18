@@ -561,6 +561,16 @@ local function update_extmarks(bufnr, ns_id, ui_opts)
       heading_renderer:render(bufnr)
     end
   end
+
+  -- Update table rendering if enabled
+  if ui_opts.table and ui_opts.table.enabled then
+    local Table = require "obsidian.ui.table"
+    local client = require("obsidian").get_client()
+    if client then
+      local table_renderer = Table.new(client, ui_opts)
+      table_renderer:render(bufnr)
+    end
+  end
 end
 
 ---@param ui_opts obsidian.config.UIOpts
@@ -597,8 +607,18 @@ local function get_extmarks_autocmd_callback(ui_opts, throttle)
     update_extmarks(ev.buf, ns_id, ui_opts)
   end
 
+  -- 智能防抖：编辑时更短的防抖时间
+  local function get_debounce_time()
+    local mode = vim.api.nvim_get_mode().mode
+    if mode == "i" or mode == "R" or mode == "c" then
+      return math.min(ui_opts.update_debounce / 2, 100)  -- 编辑时最多100ms
+    else
+      return ui_opts.update_debounce
+    end
+  end
+
   if throttle then
-    return require("obsidian.async").throttle(callback, ui_opts.update_debounce)
+    return require("obsidian.async").throttle(callback, get_debounce_time())
   else
     return callback
   end
@@ -663,6 +683,22 @@ M.setup = function(workspace, ui_opts)
     callback = get_extmarks_autocmd_callback(ui_opts, true),
   })
 
+  -- 光标移动时触发重新渲染
+  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+    group = group,
+    pattern = pattern,
+    callback = function(ev)
+      if not should_update(ui_opts, ev.bufnr) then
+        return
+      end
+      -- 使用配置的光标移动延迟
+      local delay = ui_opts.cursor_render_delay or 50
+      require("obsidian.async").throttle(function()
+        update_extmarks(ev.buf, vim.api.nvim_create_namespace(NAMESPACE), ui_opts)
+      end, delay)()
+    end,
+  })
+
   vim.api.nvim_create_autocmd({ "BufUnload" }, {
     group = group,
     pattern = pattern,
@@ -677,6 +713,16 @@ M.setup = function(workspace, ui_opts)
         if client then
           local heading_renderer = Heading.new(client, ui_opts)
           heading_renderer:clear(ev.buf)
+        end
+      end
+
+      -- Clear table rendering if enabled
+      if ui_opts.table and ui_opts.table.enabled then
+        local Table = require "obsidian.ui.table"
+        local client = require("obsidian").get_client()
+        if client then
+          local table_renderer = Table.new(client, ui_opts)
+          table_renderer:clear(ev.buf)
         end
       end
     end,

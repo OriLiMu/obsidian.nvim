@@ -411,6 +411,9 @@ end
 ---@field enable boolean
 ---@field update_debounce integer
 ---@field max_file_length integer|?
+---@field skip_cursor_line boolean
+---@field cursor_render_delay integer
+---@field skip_cursor_content boolean
 ---@field checkboxes table<string, obsidian.config.CheckboxSpec>
 ---@field bullets obsidian.config.UICharSpec|?
 ---@field external_link_icon obsidian.config.UICharSpec
@@ -419,6 +422,7 @@ end
 ---@field tags obsidian.config.UIStyleSpec
 ---@field block_ids obsidian.config.UIStyleSpec
 ---@field heading obsidian.config.HeadingOpts
+---@field table obsidian.config.TableOpts
 ---@field hl_groups table<string, table>
 config.UIOpts = {}
 
@@ -447,7 +451,21 @@ config.UIOpts = {}
 ---@field border boolean
 ---@field above string
 ---@field below string
+---@field indent boolean
+---@field indent_levels table<integer, integer>|boolean
 ---@field custom table<string, obsidian.ui.heading.CustomStyle>
+
+---@class obsidian.config.TableOpts
+---@field enabled boolean
+---@field border string[]
+---@field border_enabled boolean
+---@field cell obsidian.ui.table.Cell
+---@field padding integer
+---@field min_width integer
+---@field alignment_indicator string
+---@field head string
+---@field row string
+---@field filler string
 
 ---@return obsidian.config.UIOpts
 config.UIOpts.default = function()
@@ -455,6 +473,9 @@ config.UIOpts.default = function()
     enable = true,
     update_debounce = 200,
     max_file_length = 5000,
+    skip_cursor_line = true,  -- 跳过光标所在行的渲染
+    cursor_render_delay = 50,   -- 光标移动后的渲染延迟(ms)
+    skip_cursor_content = false, -- 光标行是否跳过所有渲染内容（true=全部跳过，false=保留缩进等基础渲染）
     checkboxes = {
       [" "] = { order = 1, char = "󰄱", hl_group = "ObsidianTodo" },
       ["~"] = { order = 2, char = "󰰱", hl_group = "ObsidianTilde" },
@@ -478,7 +499,30 @@ config.UIOpts.default = function()
       border = false,
       above = "▄",
       below = "▀",
+      indent = false,
+      indent_levels = {
+        [2] = 2,
+        [3] = 4,
+        [4] = 6,
+      },
       custom = {},
+    },
+    table = {
+      enabled = false,
+      border = {
+        '┌', '┬', '┐',
+        '├', '┼', '┤',
+        '└', '┴', '┘',
+        '│', '─',
+      },
+      border_enabled = true,
+      cell = 'padded',
+      padding = 1,
+      min_width = 3,
+      alignment_indicator = '━',
+      head = 'ObsidianTableHead',
+      row = 'ObsidianTableRow',
+      filler = 'ObsidianTableFill',
     },
     hl_groups = {
       ObsidianTodo = { bold = true, fg = "#f78c6c" },
@@ -506,6 +550,10 @@ config.UIOpts.default = function()
       ObsidianHeading4Bg = { bg = "#bb9af720" },
       ObsidianHeading5Bg = { bg = "#e0af6820" },
       ObsidianHeading6Bg = { bg = "#7dcfff20" },
+      -- Table highlight groups
+      ObsidianTableHead = { bold = true, fg = "#7dcfff" },
+      ObsidianTableRow = { fg = "#c0caf5" },
+      ObsidianTableFill = { fg = "#414868" },
     },
   }
 end
