@@ -500,11 +500,7 @@ config.UIOpts.default = function()
       above = "▄",
       below = "▀",
       indent = false,
-      indent_levels = {
-        [2] = 2,
-        [3] = 4,
-        [4] = 6,
-      },
+      indent_levels = {},
       custom = {},
     },
     table = {

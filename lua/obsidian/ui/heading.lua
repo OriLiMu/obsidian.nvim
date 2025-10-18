@@ -110,25 +110,8 @@ end
 ---@param level integer
 ---@return integer
 function Heading:_get_indent(level)
-  if not self.config.heading.indent then
-    return 0
-  end
-
-  local indent_levels = self.config.heading.indent_levels
-  if type(indent_levels) == "table" then
-    return indent_levels[level] or 0
-  else
-    -- 默认缩进规则：H2=2, H3=4, H4=6
-    if level == 2 then
-      return 2
-    elseif level == 3 then
-      return 4
-    elseif level == 4 then
-      return 6
-    else
-      return 0
-    end
-  end
+  -- 缩进功能已禁用，始终返回 0
+  return 0
 end
 
 ---@private
@@ -165,34 +148,18 @@ function Heading:_render_icon(heading)
     })
     width = vim.fn.strdisplaywidth(heading.icon) + 1
   elseif position == "inline" then
-    -- 内联显示，替换 # 符号，考虑缩进
+    -- 内联显示，替换 # 符号
     local end_col = heading.level + 1
-    local icon_text = heading.icon
-
-    -- 如果有缩进，在图标前添加空格
-    if heading.indent > 0 then
-      icon_text = string.rep(" ", heading.indent) .. heading.icon
-    end
-
     vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
       end_col = end_col,
-      virt_text = { { icon_text, highlight } },
+      virt_text = { { heading.icon, highlight } },
       virt_text_pos = "inline",
       conceal = "",
     })
-    width = vim.fn.strdisplaywidth(icon_text)
+    width = vim.fn.strdisplaywidth(heading.icon)
   elseif position == "overlay" then
-    -- 覆盖显示，在左侧添加图标，考虑缩进
-    local icon_text = heading.icon
-    local base_width = heading.level
-
-    -- 如果有缩进，在图标前添加空格
-    if heading.indent > 0 then
-      icon_text = string.rep(" ", heading.indent) .. heading.icon
-      base_width = base_width + heading.indent
-    end
-
-    local padding = base_width - vim.fn.strdisplaywidth(heading.icon)
+    -- 覆盖显示，在左侧添加图标
+    local padding = heading.level - vim.fn.strdisplaywidth(heading.icon)
     if padding > 0 then
       local padding_text = string.rep(" ", padding)
       vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
@@ -202,12 +169,12 @@ function Heading:_render_icon(heading)
     else
       vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
         end_col = heading.level + 1,
-        virt_text = { { icon_text, highlight } },
+        virt_text = { { heading.icon, highlight } },
         virt_text_pos = "inline",
         conceal = "",
       })
     end
-    width = base_width + 1
+    width = heading.level + 1
   end
 
   return width
@@ -224,9 +191,8 @@ function Heading:_render_background(heading)
   local width = self.config.heading.width or "full"
 
   if width == "block" then
-    -- 只渲染标题文本宽度的背景，考虑缩进
-    local start_col = heading.indent > 0 and heading.indent or 0
-    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, start_col, {
+    -- 只渲染标题文本宽度的背景
+    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
       end_col = heading.end_col,
       hl_group = heading.highlight_bg,
       hl_eol = false,
@@ -372,56 +338,16 @@ end
 ---@private
 ---@param heading obsidian.ui.Heading.Data
 function Heading:_render_heading_partial(heading)
-  -- 只渲染缩进，不渲染图标，不渲染边框，不渲染背景
-  -- 但是保持标题文本的基本高亮
-
-  if heading.indent <= 0 then
-    return
-  end
-
+  -- 缩进功能已禁用，不进行任何渲染
+  -- 只保留基本的高亮效果
   local bufnr = vim.api.nvim_get_current_buf()
-  local position = self.config.heading.position
 
-  if position == "inline" then
-    -- 内联显示：在#符号后添加缩进空格，保持文本高亮
-    local indent_text = string.rep(" ", heading.indent)
-    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
-      end_col = heading.level + 1,
-      virt_text = { { indent_text, heading.highlight_fg or ("ObsidianHeading" .. heading.level) } },
-      virt_text_pos = "inline",
-      conceal = "",
-    })
-  elseif position == "overlay" then
-    -- 覆盖显示：在行首添加缩进
-    local indent_text = string.rep(" ", heading.indent)
-    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
-      virt_text = { { indent_text } },
-      virt_text_pos = "overlay",
-    })
-
-    -- 同时为标题文本添加基本高亮（从#符号后开始到行尾）
-    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, heading.level + 1, {
-      end_col = heading.end_col,
-      hl_group = heading.highlight_fg or ("ObsidianHeading" .. heading.level),
-      hl_eol = false,
-    })
-  elseif position == "right" then
-    -- 右侧显示：仍然添加缩进效果
-    local indent_text = string.rep(" ", heading.indent)
-    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, 0, {
-      end_col = heading.level + 1,
-      virt_text = { { indent_text, heading.highlight_fg or ("ObsidianHeading" .. heading.level) } },
-      virt_text_pos = "inline",
-      conceal = "",
-    })
-
-    -- 为标题文本添加高亮
-    vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, heading.indent + heading.level + 1, {
-      end_col = heading.end_col,
-      hl_group = heading.highlight_fg or ("ObsidianHeading" .. heading.level),
-      hl_eol = false,
-    })
-  end
+  -- 为标题文本添加基本高亮（从#符号后开始到行尾）
+  vim.api.nvim_buf_set_extmark(bufnr, self.ns_id, heading.line, heading.level + 1, {
+    end_col = heading.end_col,
+    hl_group = heading.highlight_fg or ("ObsidianHeading" .. heading.level),
+    hl_eol = false,
+  })
 end
 
 return Heading
