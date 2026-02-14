@@ -593,6 +593,7 @@ end
 
 ---@class obsidian.config.RecentFilesOpts
 ---@field enabled boolean 是否启用最近文件功能
+---@field auto_open boolean 是否自动打开侧边栏
 ---@field width string 侧边栏宽度，例如 "30%"
 ---@field max_files integer 显示的最大文件数量
 config.RecentFilesOpts = {}
@@ -601,6 +602,7 @@ config.RecentFilesOpts = {}
 config.RecentFilesOpts.default = function()
   return {
     enabled = true,
+    auto_open = false,
     width = "30%",
     max_files = 5,
   }

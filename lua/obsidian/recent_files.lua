@@ -531,6 +531,11 @@ function M.setup(client)
     pattern = "markdown",
     desc = "在打开 Markdown 文件时显示侧边栏",
     callback = function()
+      -- 如果未配置自动打开，直接返回
+      if not opts.auto_open then
+        return
+      end
+
       -- 如果是 /tmp/ai_chat.md，直接返回
       if vim.fn.expand "%:p" == "/tmp/ai_chat.md" then
         return
