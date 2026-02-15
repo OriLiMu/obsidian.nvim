@@ -72,7 +72,7 @@ source.complete = function(_, request, callback)
   local new_notes_opts = {}
 
   local note = client:create_note { title = search, no_write = true }
-  if note.title and string.len(note.title) > 0 then
+  if note and note.title and string.len(note.title) > 0 then
     new_notes_opts[#new_notes_opts + 1] = { label = search, note = note }
   end
 
