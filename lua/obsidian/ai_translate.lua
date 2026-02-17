@@ -35,18 +35,21 @@ M.translate = function(text, opts)
   log.debug("[ai_translate] Translating: %s", text)
   vim.notify("[Obsidian AI] Translating: " .. text, vim.log.levels.INFO)
 
+  -- Build the JSON body
+  local prompt = "Translate the following Chinese text to English. Only output the English translation, nothing else. Text: " .. text
   local body = vim.json.encode({
     model = model,
     messages = {
-      {
-        role = "user",
-        content = "Translate the following Chinese text to English. Only output the English translation, nothing else. Text: " .. text,
-      },
+      { role = "user", content = prompt },
     },
     stream = false,
   })
 
-  local result = vim.system({
+  -- Write body to temp file to avoid shell escaping issues
+  local tmp_file = vim.fn.tempname()
+  vim.fn.writefile({ body }, tmp_file)
+
+  local cmd = {
     "curl",
     "-s",
     "-X",
@@ -56,13 +59,28 @@ M.translate = function(text, opts)
     "-H",
     "Content-Type: application/json",
     "-d",
-    body,
+    "@" .. tmp_file,
     "--connect-timeout",
-    tostring(math.floor(timeout / 1000)),
+    "10",
     "-m",
-    tostring(math.floor(timeout / 1000)),
+    tostring(math.floor(timeout / 1000) + 5),
     url,
-  }, { timeout = timeout })
+  }
+
+  log.debug("[ai_translate] Running curl command")
+  local result = vim.system(cmd, { timeout = timeout + 5000 })
+
+  -- Clean up temp file
+  vim.fn.delete(tmp_file)
+
+  log.debug("[ai_translate] curl result: code=%s, stdout_len=%d, stderr=%s",
+    tostring(result.code), #(result.stdout or ""), tostring(result.stderr or "none"))
+
+  if result.code == nil then
+    log.err("[ai_translate] curl returned nil code, stderr: %s", tostring(result.stderr or "none"))
+    vim.notify("[Obsidian AI] curl returned nil - possible timeout", vim.log.levels.ERROR)
+    return nil
+  end
 
   if result.code ~= 0 then
     log.err("[ai_translate] curl failed with code %s: %s", tostring(result.code), tostring(result.stderr or "no stderr"))
