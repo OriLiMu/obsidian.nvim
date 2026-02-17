@@ -282,24 +282,33 @@ end
 ---
 ---@return boolean
 Client.should_save_frontmatter = function(self, note)
+  log.debug("[should_save_frontmatter] Checking note: %s", note.id)
+
   -- Check if the note is a template.
   local templates_dir = self:templates_dir()
   if templates_dir ~= nil then
     templates_dir = templates_dir:resolve()
     for _, parent in ipairs(note.path:parents()) do
       if parent == templates_dir then
+        log.debug("[should_save_frontmatter] Note is in templates dir, returning false")
         return false
       end
     end
   end
 
   if not note:should_save_frontmatter() then
+    log.debug("[should_save_frontmatter] note:should_save_frontmatter() returned false")
     return false
   elseif type(self.opts.disable_frontmatter) == "boolean" then
-    return not self.opts.disable_frontmatter
+    local result = not self.opts.disable_frontmatter
+    log.debug("[should_save_frontmatter] disable_frontmatter is boolean: %s, result: %s", self.opts.disable_frontmatter, result)
+    return result
   elseif type(self.opts.disable_frontmatter) == "function" then
-    return not self.opts.disable_frontmatter(tostring(self:vault_relative_path(note.path, { strict = true })))
+    local result = not self.opts.disable_frontmatter(tostring(self:vault_relative_path(note.path, { strict = true })))
+    log.debug("[should_save_frontmatter] disable_frontmatter is function, result: %s", result)
+    return result
   else
+    log.debug("[should_save_frontmatter] returning true (default)")
     return true
   end
 end
@@ -1907,15 +1916,30 @@ end
 ---
 ---@return boolean updated If the the frontmatter was updated.
 Client.update_frontmatter = function(self, note, bufnr)
+  log.debug("[update_frontmatter] Starting for note: %s", note.id)
+  vim.notify("[Obsidian] update_frontmatter called for: " .. tostring(note.id), vim.log.levels.INFO)
+
   if not self:should_save_frontmatter(note) then
+    log.debug("[update_frontmatter] should_save_frontmatter returned false, skipping")
+    vim.notify("[Obsidian] should_save_frontmatter = false, skipping", vim.log.levels.WARN)
     return false
   end
 
+  log.debug("[update_frontmatter] should_save_frontmatter = true, proceeding")
+  vim.notify("[Obsidian] should_save_frontmatter = true, proceeding", vim.log.levels.INFO)
+
   local frontmatter = nil
   if self.opts.note_frontmatter_func ~= nil then
+    log.debug("[update_frontmatter] Calling note_frontmatter_func")
     frontmatter = self.opts.note_frontmatter_func(note)
   end
-  return note:save_to_buffer { bufnr = bufnr, frontmatter = frontmatter }
+
+  log.debug("[update_frontmatter] Calling save_to_buffer")
+  local result = note:save_to_buffer { bufnr = bufnr, frontmatter = frontmatter }
+  log.debug("[update_frontmatter] save_to_buffer returned: %s", result)
+  vim.notify("[Obsidian] save_to_buffer result: " .. tostring(result), vim.log.levels.INFO)
+
+  return result
 end
 
 --- Get the path to a daily note.

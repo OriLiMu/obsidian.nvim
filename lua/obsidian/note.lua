@@ -172,7 +172,9 @@ end
 
 Note.should_save_frontmatter = function(self)
   local fname = self:fname()
-  return (fname ~= nil and not util.tbl_contains(SKIP_UPDATING_FRONTMATTER, fname))
+  local result = (fname ~= nil and not util.tbl_contains(SKIP_UPDATING_FRONTMATTER, fname))
+  log.debug("[Note.should_save_frontmatter] fname=%s, result=%s", fname, result)
+  return result
 end
 
 --- Check if a note has a given alias.
@@ -747,6 +749,9 @@ end
 Note.save_to_buffer = function(self, opts)
   opts = opts or {}
 
+  log.debug("[save_to_buffer] Starting for note: %s", self.id)
+  vim.notify("[Obsidian] save_to_buffer for: " .. tostring(self.id), vim.log.levels.INFO)
+
   local bufnr = opts.bufnr
   if not bufnr then
     bufnr = self.bufnr or 0
@@ -758,8 +763,10 @@ Note.save_to_buffer = function(self, opts)
   local new_lines
   if opts.insert_frontmatter ~= false then
     new_lines = self:frontmatter_lines(nil, opts.frontmatter)
+    log.debug("[save_to_buffer] Generated new_lines: %s", vim.inspect(new_lines))
   else
     new_lines = {}
+    log.debug("[save_to_buffer] insert_frontmatter = false, new_lines is empty")
   end
 
   if util.buffer_is_empty(bufnr) and self.title ~= nil then
@@ -770,9 +777,14 @@ Note.save_to_buffer = function(self, opts)
   local cur_lines = {}
   if cur_buf_note.frontmatter_end_line ~= nil then
     cur_lines = vim.api.nvim_buf_get_lines(bufnr, 0, cur_buf_note.frontmatter_end_line, false)
+    log.debug("[save_to_buffer] cur_lines: %s", vim.inspect(cur_lines))
+  else
+    log.debug("[save_to_buffer] frontmatter_end_line is nil")
   end
 
   if not vim.deep_equal(cur_lines, new_lines) then
+    log.debug("[save_to_buffer] Lines are different, updating buffer")
+    vim.notify("[Obsidian] Lines different, updating buffer", vim.log.levels.INFO)
     vim.api.nvim_buf_set_lines(
       bufnr,
       0,
@@ -782,6 +794,8 @@ Note.save_to_buffer = function(self, opts)
     )
     return true
   else
+    log.debug("[save_to_buffer] Lines are same, no update needed")
+    vim.notify("[Obsidian] Lines same, no update", vim.log.levels.WARN)
     return false
   end
 end

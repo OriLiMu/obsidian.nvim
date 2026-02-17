@@ -195,16 +195,26 @@ obsidian.setup = function(opts)
     group = group,
     pattern = "*.md",
     callback = function(ev)
+      log.debug("[BufWritePre] Triggered for: %s", ev.match)
+      vim.notify("[Obsidian] BufWritePre triggered: " .. ev.match, vim.log.levels.DEBUG)
+
       local buf_dir = vim.fs.dirname(ev.match)
 
       -- Check if we're in a workspace.
       local workspace = obsidian.Workspace.get_workspace_for_dir(buf_dir, client.opts.workspaces)
       if not workspace then
+        log.debug("[BufWritePre] No workspace found for dir: %s", buf_dir)
+        vim.notify("[Obsidian] No workspace found for: " .. buf_dir, vim.log.levels.DEBUG)
         return
       end
 
+      log.debug("[BufWritePre] Found workspace: %s", workspace.name)
+      vim.notify("[Obsidian] Found workspace: " .. workspace.name, vim.log.levels.DEBUG)
+
       -- Check if current buffer is actually a note within the workspace.
       if not client:path_is_note(ev.match, workspace) then
+        log.debug("[BufWritePre] Not a note: %s", ev.match)
+        vim.notify("[Obsidian] Not a note: " .. ev.match, vim.log.levels.DEBUG)
         return
       end
 
@@ -212,12 +222,24 @@ obsidian.setup = function(opts)
       local bufnr = ev.buf
       local note = obsidian.Note.from_buffer(bufnr)
 
+      log.debug("[BufWritePre] Note id: %s, aliases: %s", note.id, vim.inspect(note.aliases))
+      vim.notify(string.format("[Obsidian] Note: id=%s, aliases=%s", note.id, vim.inspect(note.aliases)), vim.log.levels.INFO)
+
       -- Run pre-write-note callback.
       client.callback_manager:pre_write_note(note)
+
+      -- Check should_save_frontmatter
+      local should_save = client:should_save_frontmatter(note)
+      log.debug("[BufWritePre] should_save_frontmatter: %s", should_save)
+      vim.notify("[Obsidian] should_save_frontmatter: " .. tostring(should_save), vim.log.levels.INFO)
 
       -- Update buffer with new frontmatter.
       if client:update_frontmatter(note, bufnr) then
         log.info "Updated frontmatter"
+        vim.notify("[Obsidian] Updated frontmatter!", vim.log.levels.INFO)
+      else
+        log.debug("[BufWritePre] Frontmatter not updated")
+        vim.notify("[Obsidian] Frontmatter NOT updated", vim.log.levels.WARN)
       end
     end,
   })
