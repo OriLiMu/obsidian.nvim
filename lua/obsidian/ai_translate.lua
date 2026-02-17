@@ -160,13 +160,15 @@ M.translate_async = function(text, opts, callback)
     args = curl_args,
     stdio = { nil, stdout, stderr },
   }, function(code, signal)
-    -- Cleanup
+    -- Cleanup uv handles
     uv.close(handle)
     uv.close(stdout)
     uv.close(stderr)
-    vim.fn.delete(tmp_file)
 
     vim.schedule(function()
+      -- Delete temp file in scheduled context
+      vim.fn.delete(tmp_file)
+
       if code ~= 0 then
         log.err("[ai_translate] Translation failed")
         callback(nil)
