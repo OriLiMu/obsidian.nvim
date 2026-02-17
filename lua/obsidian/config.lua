@@ -3,6 +3,13 @@ local util = require "obsidian.util"
 
 local config = {}
 
+---@class obsidian.config.AITranslateOpts
+---@field enabled boolean Whether to enable auto-translate aliases
+---@field api_url string API endpoint URL
+---@field api_key string API key for authentication
+---@field model string Model to use for translation
+---@field timeout integer Request timeout in milliseconds
+
 ---@class obsidian.config.ClientOpts
 ---@field dir string|?
 ---@field workspaces obsidian.workspace.WorkspaceSpec[]|?
@@ -33,6 +40,7 @@ local config = {}
 ---@field attachments obsidian.config.AttachmentsOpts
 ---@field callbacks obsidian.config.CallbackConfig
 ---@field recent_files obsidian.config.RecentFilesOpts
+---@field ai_translate obsidian.config.AITranslateOpts
 config.ClientOpts = {}
 
 --- Get defaults.
@@ -67,6 +75,13 @@ config.ClientOpts.default = function()
     attachments = config.AttachmentsOpts.default(),
     callbacks = config.CallbackConfig.default(),
     recent_files = config.RecentFilesOpts.default(),
+    ai_translate = {
+      enabled = false,
+      api_url = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+      api_key = "",
+      model = "glm-4.5-flash",
+      timeout = 10000,
+    },
   }
 end
 

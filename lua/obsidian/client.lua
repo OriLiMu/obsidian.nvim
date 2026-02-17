@@ -1928,6 +1928,25 @@ Client.update_frontmatter = function(self, note, bufnr)
   log.debug("[update_frontmatter] should_save_frontmatter = true, proceeding")
   vim.notify("[Obsidian] should_save_frontmatter = true, proceeding", vim.log.levels.INFO)
 
+  -- Check if we need to translate aliases using AI
+  local ai_translate_opts = self.opts.ai_translate
+  if ai_translate_opts and ai_translate_opts.enabled and note:needs_aliases_translation() then
+    local ai_translate = require "obsidian.ai_translate"
+    log.debug("[update_frontmatter] AI translation enabled, translating id: %s", note.id)
+    vim.notify("[Obsidian AI] Translating id to alias: " .. tostring(note.id), vim.log.levels.INFO)
+
+    local translated = ai_translate.translate(note.id, ai_translate_opts)
+    if translated then
+      local formatted_alias = ai_translate.format_alias(translated)
+      note.aliases = { formatted_alias }
+      log.debug("[update_frontmatter] Set aliases to: %s", vim.inspect(note.aliases))
+      vim.notify("[Obsidian AI] Set aliases to: " .. formatted_alias, vim.log.levels.INFO)
+    else
+      log.warn("[update_frontmatter] AI translation failed for: %s", note.id)
+      vim.notify("[Obsidian AI] Translation failed", vim.log.levels.WARN)
+    end
+  end
+
   local frontmatter = nil
   if self.opts.note_frontmatter_func ~= nil then
     log.debug("[update_frontmatter] Calling note_frontmatter_func")

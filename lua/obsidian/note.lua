@@ -177,6 +177,19 @@ Note.should_save_frontmatter = function(self)
   return result
 end
 
+--- Check if note needs aliases to be translated from id
+---@return boolean
+Note.needs_aliases_translation = function(self)
+  -- aliases is empty or nil
+  if not self.aliases or #self.aliases == 0 then
+    -- id contains Chinese characters
+    if self.id and string.match(self.id, "[\228-\233]") then
+      return true
+    end
+  end
+  return false
+end
+
 --- Check if a note has a given alias.
 ---
 ---@param alias string
