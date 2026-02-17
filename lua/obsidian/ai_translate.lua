@@ -49,51 +49,36 @@ M.translate = function(text, opts)
   local tmp_file = vim.fn.tempname()
   vim.fn.writefile({ body }, tmp_file)
 
-  local cmd = {
-    "curl",
-    "-s",
-    "-X",
-    "POST",
-    "-H",
-    "Authorization: Bearer " .. api_key,
-    "-H",
-    "Content-Type: application/json",
-    "-d",
-    "@" .. tmp_file,
-    "--connect-timeout",
-    "10",
-    "-m",
-    tostring(math.floor(timeout / 1000) + 5),
-    url,
-  }
+  -- Build curl command as string for io.popen
+  local timeout_sec = math.floor(timeout / 1000)
+  local curl_cmd = string.format(
+    'curl -s -X POST -H "Authorization: Bearer %s" -H "Content-Type: application/json" -d @%s --connect-timeout %d -m %d "%s"',
+    api_key, tmp_file, timeout_sec, timeout_sec + 5, url
+  )
 
   log.debug("[ai_translate] Running curl command")
-  local result = vim.system(cmd, { timeout = timeout + 5000 })
+  local handle = io.popen(curl_cmd)
+  local response = nil
+
+  if handle then
+    response = handle:read("*a")
+    handle:close()
+  end
 
   -- Clean up temp file
   vim.fn.delete(tmp_file)
 
-  log.debug("[ai_translate] curl result: code=%s, stdout_len=%d, stderr=%s",
-    tostring(result.code), #(result.stdout or ""), tostring(result.stderr or "none"))
-
-  if result.code == nil then
-    log.err("[ai_translate] curl returned nil code, stderr: %s", tostring(result.stderr or "none"))
-    vim.notify("[Obsidian AI] curl returned nil - possible timeout", vim.log.levels.ERROR)
+  if not response or response == "" then
+    log.err("[ai_translate] curl returned empty response")
+    vim.notify("[Obsidian AI] Translation failed: empty response", vim.log.levels.ERROR)
     return nil
   end
 
-  if result.code ~= 0 then
-    log.err("[ai_translate] curl failed with code %s: %s", tostring(result.code), tostring(result.stderr or "no stderr"))
-    vim.notify("[Obsidian AI] Translation failed: curl error", vim.log.levels.ERROR)
-    return nil
-  end
-
-  local response = result.stdout
-  log.debug("[ai_translate] Response: %s", response)
+  log.debug("[ai_translate] Response length: %d", #response)
 
   local ok, data = pcall(vim.json.decode, response)
   if not ok or not data then
-    log.err("[ai_translate] Failed to parse JSON response: %s", tostring(response))
+    log.err("[ai_translate] Failed to parse JSON response: %s", tostring(response):sub(1, 200))
     vim.notify("[Obsidian AI] Failed to parse response", vim.log.levels.ERROR)
     return nil
   end
@@ -101,7 +86,7 @@ M.translate = function(text, opts)
   local translated = data.choices and data.choices[1] and data.choices[1].message and data.choices[1].message.content
 
   if not translated then
-    log.err("[ai_translate] No translation in response: %s", tostring(response))
+    log.err("[ai_translate] No translation in response: %s", tostring(response):sub(1, 200))
     vim.notify("[Obsidian AI] No translation found in response", vim.log.levels.ERROR)
     return nil
   end
