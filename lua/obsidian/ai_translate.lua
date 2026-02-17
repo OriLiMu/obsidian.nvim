@@ -12,7 +12,18 @@ M.contains_chinese = function(str)
   return string.match(str, "[\228-\233][\128-\191][\128-\191]") ~= nil
 end
 
---- Translate text using AI API
+--- Format translated text as alias (lowercase, spaces to hyphens)
+---@param translated_text string
+---@return string
+M.format_alias = function(translated_text)
+  if not translated_text then
+    return ""
+  end
+  local result = translated_text:lower():gsub("%s+", "-"):gsub("[^%w%-]", "")
+  return result
+end
+
+--- Translate text using AI API (synchronous - blocks)
 ---@param text string Text to translate
 ---@param opts { api_url: string, api_key: string, model: string, timeout: integer }
 ---@return string|nil translated_text
@@ -100,15 +111,146 @@ M.translate = function(text, opts)
   return translated
 end
 
---- Format translated text as alias (lowercase, spaces to hyphens)
----@param translated_text string
----@return string
-M.format_alias = function(translated_text)
-  if not translated_text then
-    return ""
+--- Translate text using AI API (asynchronous - non-blocking)
+---@param text string Text to translate
+---@param opts { api_url: string, api_key: string, model: string, timeout: integer }
+---@param callback fun(translated: string|nil) Callback function called with translation result
+M.translate_async = function(text, opts, callback)
+  if not text or text == "" then
+    callback(nil)
+    return
   end
-  local result = translated_text:lower():gsub("%s+", "-"):gsub("[^%w%-]", "")
-  return result
+
+  local url = opts.api_url or "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+  local api_key = opts.api_key
+  local model = opts.model or "glm-4.5-flash"
+  local timeout = opts.timeout or 10000
+
+  if not api_key or api_key == "" then
+    require("obsidian.log").warn("[ai_translate] API key not configured")
+    callback(nil)
+    return
+  end
+
+  local log = require("obsidian.log")
+  log.debug("[ai_translate_async] Translating: %s", text)
+  vim.notify("[Obsidian AI] Translating in background: " .. text, vim.log.levels.INFO)
+
+  -- Build the JSON body
+  local prompt = "Translate the following Chinese text to English. Only output the English translation, nothing else. Text: " .. text
+  local body = vim.json.encode({
+    model = model,
+    messages = {
+      { role = "user", content = prompt },
+    },
+    stream = false,
+  })
+
+  -- Write body to temp file
+  local tmp_file = vim.fn.tempname()
+  vim.fn.writefile({ body }, tmp_file)
+
+  local timeout_sec = math.floor(timeout / 1000)
+
+  -- Use vim.loop (vim.uv) for async execution
+  local uv = vim.loop or vim.uv
+
+  local stdout = uv.new_pipe()
+  local stderr = uv.new_pipe()
+
+  local curl_args = {
+    "-s", "-X", "POST",
+    "-H", "Authorization: Bearer " .. api_key,
+    "-H", "Content-Type: application/json",
+    "-d", "@" .. tmp_file,
+    "--connect-timeout", tostring(timeout_sec),
+    "-m", tostring(timeout_sec + 5),
+    url,
+  }
+
+  log.debug("[ai_translate_async] Spawning curl process")
+
+  local response_data = {}
+  local stderr_data = {}
+
+  local handle
+  handle = uv.spawn("curl", {
+    args = curl_args,
+    stdio = { nil, stdout, stderr },
+  }, function(code, signal)
+    -- Cleanup
+    uv.close(handle)
+    uv.close(stdout)
+    uv.close(stderr)
+    vim.fn.delete(tmp_file)
+
+    log.debug("[ai_translate_async] curl finished with code: %s", tostring(code))
+
+    vim.schedule(function()
+      if code ~= 0 then
+        log.err("[ai_translate_async] curl failed with code %s", tostring(code))
+        vim.notify("[Obsidian AI] Translation failed", vim.log.levels.ERROR)
+        callback(nil)
+        return
+      end
+
+      local response = table.concat(response_data)
+      if not response or response == "" then
+        log.err("[ai_translate_async] Empty response")
+        vim.notify("[Obsidian AI] Translation failed: empty response", vim.log.levels.ERROR)
+        callback(nil)
+        return
+      end
+
+      log.debug("[ai_translate_async] Response length: %d", #response)
+
+      local ok, data = pcall(vim.json.decode, response)
+      if not ok or not data then
+        log.err("[ai_translate_async] Failed to parse JSON")
+        vim.notify("[Obsidian AI] Failed to parse response", vim.log.levels.ERROR)
+        callback(nil)
+        return
+      end
+
+      local translated = data.choices and data.choices[1] and data.choices[1].message and data.choices[1].message.content
+
+      if not translated then
+        log.err("[ai_translate_async] No translation in response")
+        vim.notify("[Obsidian AI] No translation found", vim.log.levels.ERROR)
+        callback(nil)
+        return
+      end
+
+      -- Clean up the translation
+      translated = translated:gsub('^"+', ""):gsub('"+$', ""):gsub("^%s+", ""):gsub("%s+$", "")
+
+      log.debug("[ai_translate_async] Translated: %s -> %s", text, translated)
+      vim.notify("[Obsidian AI] Translated: " .. text .. " -> " .. translated, vim.log.levels.INFO)
+
+      callback(translated)
+    end)
+  end)
+
+  if not handle then
+    log.err("[ai_translate_async] Failed to spawn curl")
+    vim.fn.delete(tmp_file)
+    callback(nil)
+    return
+  end
+
+  -- Read stdout
+  uv.read_start(stdout, function(err, data)
+    if data then
+      table.insert(response_data, data)
+    end
+  end)
+
+  -- Read stderr
+  uv.read_start(stderr, function(err, data)
+    if data then
+      table.insert(stderr_data, data)
+    end
+  end)
 end
 
 return M

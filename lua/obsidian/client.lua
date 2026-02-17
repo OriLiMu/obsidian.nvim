@@ -1910,71 +1910,87 @@ Client.write_note_to_buffer = function(self, note, opts)
 end
 
 --- Update the frontmatter in a buffer for the note.
----
+--- Returns:
+---   - true: frontmatter was updated
+---   - false: frontmatter was not updated
+---   - "async": async translation started, save was cancelled (will re-save after translation)
 ---@param note obsidian.Note
 ---@param bufnr integer|?
 ---
----@return boolean updated If the the frontmatter was updated.
+---@return boolean|string updated
 Client.update_frontmatter = function(self, note, bufnr)
+  bufnr = bufnr or 0
   log.debug("[update_frontmatter] Starting for note: %s", note.id)
-  vim.notify("[Obsidian] update_frontmatter called for: " .. tostring(note.id), vim.log.levels.INFO)
 
   if not self:should_save_frontmatter(note) then
     log.debug("[update_frontmatter] should_save_frontmatter returned false, skipping")
-    vim.notify("[Obsidian] should_save_frontmatter = false, skipping", vim.log.levels.WARN)
     return false
   end
 
-  log.debug("[update_frontmatter] should_save_frontmatter = true, proceeding")
-  vim.notify("[Obsidian] should_save_frontmatter = true, proceeding", vim.log.levels.INFO)
-
   -- Check if we need to translate aliases using AI
   local ai_translate_opts = self.opts.ai_translate
-  log.debug("[update_frontmatter] ai_translate_opts: %s", vim.inspect(ai_translate_opts))
-  vim.notify("[Obsidian] ai_translate config: " .. vim.inspect(ai_translate_opts), vim.log.levels.INFO)
-
   local needs_translation = note:needs_aliases_translation()
-  log.debug("[update_frontmatter] needs_aliases_translation: %s", needs_translation)
-  vim.notify("[Obsidian] needs_aliases_translation: " .. tostring(needs_translation), vim.log.levels.INFO)
+
+  -- Check if this is a re-save after async translation completed
+  local buf_var = vim.b[bufnr].obsidian_ai_translation_done
+  if buf_var then
+    log.debug("[update_frontmatter] Re-save after AI translation, clearing flag")
+    vim.b[bufnr].obsidian_ai_translation_done = nil
+    needs_translation = false
+  end
 
   if ai_translate_opts and ai_translate_opts.enabled and needs_translation then
     local ai_translate = require "obsidian.ai_translate"
-    log.debug("[update_frontmatter] AI translation enabled, translating id: %s", note.id)
-    vim.notify("[Obsidian AI] Translating id to alias: " .. tostring(note.id), vim.log.levels.INFO)
+    log.debug("[update_frontmatter] Starting async AI translation for: %s", note.id)
+    vim.notify("[Obsidian AI] Translating in background: " .. tostring(note.id), vim.log.levels.INFO)
 
-    local translated = ai_translate.translate(note.id, ai_translate_opts)
-    if translated then
-      local formatted_alias = ai_translate.format_alias(translated)
-      note.aliases = { formatted_alias }
-      log.debug("[update_frontmatter] Set aliases to: %s", vim.inspect(note.aliases))
-      vim.notify("[Obsidian AI] Set aliases to: " .. formatted_alias, vim.log.levels.INFO)
-    else
-      log.warn("[update_frontmatter] AI translation failed for: %s", note.id)
-      vim.notify("[Obsidian AI] Translation failed", vim.log.levels.WARN)
-    end
-  else
-    local reason = "unknown"
-    if not ai_translate_opts then
-      reason = "ai_translate_opts is nil"
-    elseif not ai_translate_opts.enabled then
-      reason = "ai_translate.enabled is false"
-    elseif not needs_translation then
-      reason = "note does not need translation (aliases not empty or id not Chinese)"
-    end
-    log.debug("[update_frontmatter] AI translation skipped: %s", reason)
-    vim.notify("[Obsidian] AI translation skipped: " .. reason, vim.log.levels.WARN)
+    -- Store reference to client and note for callback
+    local client = self
+    local note_id = note.id
+    local current_bufnr = bufnr
+
+    -- Start async translation
+    ai_translate.translate_async(note.id, ai_translate_opts, function(translated)
+      if translated then
+        local formatted_alias = ai_translate.format_alias(translated)
+        log.debug("[update_frontmatter] Async translation complete: %s -> %s", note_id, formatted_alias)
+        vim.notify("[Obsidian AI] Translation complete: " .. formatted_alias, vim.log.levels.INFO)
+
+        -- Update the note's aliases
+        note.aliases = { formatted_alias }
+
+        -- Mark that translation is done so next save doesn't re-translate
+        vim.b[current_bufnr].obsidian_ai_translation_done = true
+
+        -- Save frontmatter to buffer
+        local frontmatter = nil
+        if client.opts.note_frontmatter_func ~= nil then
+          frontmatter = client.opts.note_frontmatter_func(note)
+        end
+        note:save_to_buffer { bufnr = current_bufnr, frontmatter = frontmatter }
+
+        -- Re-save the buffer
+        vim.cmd("silent! write")
+        vim.notify("[Obsidian AI] Updated aliases and saved", vim.log.levels.INFO)
+      else
+        log.warn("[update_frontmatter] Async AI translation failed for: %s", note_id)
+        vim.notify("[Obsidian AI] Translation failed, saving without aliases", vim.log.levels.WARN)
+        -- Save anyway without translation
+        vim.cmd("silent! write")
+      end
+    end)
+
+    -- Return "async" to indicate save should be cancelled
+    return "async"
   end
 
   local frontmatter = nil
   if self.opts.note_frontmatter_func ~= nil then
-    log.debug("[update_frontmatter] Calling note_frontmatter_func")
     frontmatter = self.opts.note_frontmatter_func(note)
   end
 
-  log.debug("[update_frontmatter] Calling save_to_buffer")
   local result = note:save_to_buffer { bufnr = bufnr, frontmatter = frontmatter }
   log.debug("[update_frontmatter] save_to_buffer returned: %s", result)
-  vim.notify("[Obsidian] save_to_buffer result: " .. tostring(result), vim.log.levels.INFO)
 
   return result
 end
