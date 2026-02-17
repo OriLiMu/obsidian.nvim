@@ -180,13 +180,24 @@ end
 --- Check if note needs aliases to be translated from id
 ---@return boolean
 Note.needs_aliases_translation = function(self)
+  log.debug("[needs_aliases_translation] Checking note id=%s, aliases=%s", self.id, vim.inspect(self.aliases))
+
   -- aliases is empty or nil
-  if not self.aliases or #self.aliases == 0 then
+  local aliases_empty = not self.aliases or #self.aliases == 0
+  log.debug("[needs_aliases_translation] aliases_empty: %s", aliases_empty)
+
+  if aliases_empty then
     -- id contains Chinese characters
-    if self.id and string.match(self.id, "[\228-\233]") then
+    local has_chinese = self.id and string.match(self.id, "[\228-\233]") ~= nil
+    log.debug("[needs_aliases_translation] id=%s, has_chinese: %s", self.id, has_chinese)
+
+    if has_chinese then
+      log.debug("[needs_aliases_translation] Returning TRUE")
       return true
     end
   end
+
+  log.debug("[needs_aliases_translation] Returning FALSE")
   return false
 end
 

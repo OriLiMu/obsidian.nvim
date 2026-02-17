@@ -1930,7 +1930,14 @@ Client.update_frontmatter = function(self, note, bufnr)
 
   -- Check if we need to translate aliases using AI
   local ai_translate_opts = self.opts.ai_translate
-  if ai_translate_opts and ai_translate_opts.enabled and note:needs_aliases_translation() then
+  log.debug("[update_frontmatter] ai_translate_opts: %s", vim.inspect(ai_translate_opts))
+  vim.notify("[Obsidian] ai_translate config: " .. vim.inspect(ai_translate_opts), vim.log.levels.INFO)
+
+  local needs_translation = note:needs_aliases_translation()
+  log.debug("[update_frontmatter] needs_aliases_translation: %s", needs_translation)
+  vim.notify("[Obsidian] needs_aliases_translation: " .. tostring(needs_translation), vim.log.levels.INFO)
+
+  if ai_translate_opts and ai_translate_opts.enabled and needs_translation then
     local ai_translate = require "obsidian.ai_translate"
     log.debug("[update_frontmatter] AI translation enabled, translating id: %s", note.id)
     vim.notify("[Obsidian AI] Translating id to alias: " .. tostring(note.id), vim.log.levels.INFO)
@@ -1945,6 +1952,17 @@ Client.update_frontmatter = function(self, note, bufnr)
       log.warn("[update_frontmatter] AI translation failed for: %s", note.id)
       vim.notify("[Obsidian AI] Translation failed", vim.log.levels.WARN)
     end
+  else
+    local reason = "unknown"
+    if not ai_translate_opts then
+      reason = "ai_translate_opts is nil"
+    elseif not ai_translate_opts.enabled then
+      reason = "ai_translate.enabled is false"
+    elseif not needs_translation then
+      reason = "note does not need translation (aliases not empty or id not Chinese)"
+    end
+    log.debug("[update_frontmatter] AI translation skipped: %s", reason)
+    vim.notify("[Obsidian] AI translation skipped: " .. reason, vim.log.levels.WARN)
   end
 
   local frontmatter = nil
