@@ -12,14 +12,42 @@ M.contains_chinese = function(str)
   return string.match(str, "[\228-\233][\128-\191][\128-\191]") ~= nil
 end
 
+--- Extract text to translate from id
+--- If id is like "31_下一个排列", return "下一个排列" and prefix "31_"
+--- If id is like "吃苹果", return "吃苹果" and prefix nil
+---@param id string
+---@return string text_to_translate, string|nil prefix
+M.extract_translate_text = function(id)
+  if not id then
+    return "", nil
+  end
+
+  -- Check for pattern: number + underscore + text
+  local prefix, text = id:match("^(%d+_)(.+)$")
+  if prefix and text and M.contains_chinese(text) then
+    return text, prefix
+  end
+
+  -- No prefix pattern, return full id
+  return id, nil
+end
+
 --- Format translated text as alias (lowercase, spaces to hyphens)
 ---@param translated_text string
+---@param prefix string|nil Optional prefix to prepend (e.g., "31_")
 ---@return string
-M.format_alias = function(translated_text)
+M.format_alias = function(translated_text, prefix)
   if not translated_text then
     return ""
   end
   local result = translated_text:lower():gsub("%s+", "-"):gsub("[^%w%-]", "")
+
+  -- Add prefix if present (convert "31_" to "31-")
+  if prefix then
+    local clean_prefix = prefix:gsub("_$", "-")
+    result = clean_prefix .. result
+  end
+
   return result
 end
 

@@ -19,11 +19,46 @@ describe("ai_translate module", function()
     end)
   end)
 
+  describe("extract_translate_text()", function()
+    it("should extract Chinese text from number_prefix pattern", function()
+      local text, prefix = ai_translate.extract_translate_text "31_下一个排列"
+      assert.equals("下一个排列", text)
+      assert.equals("31_", prefix)
+    end)
+
+    it("should extract Chinese text from multi-digit prefix", function()
+      local text, prefix = ai_translate.extract_translate_text "123_测试文本"
+      assert.equals("测试文本", text)
+      assert.equals("123_", prefix)
+    end)
+
+    it("should return full text for pure Chinese", function()
+      local text, prefix = ai_translate.extract_translate_text "吃苹果"
+      assert.equals("吃苹果", text)
+      assert.is_nil(prefix)
+    end)
+
+    it("should handle edge cases", function()
+      local text, prefix = ai_translate.extract_translate_text ""
+      assert.equals("", text)
+      assert.is_nil(prefix)
+
+      local text2, prefix2 = ai_translate.extract_translate_text(nil)
+      assert.equals("", text2)
+      assert.is_nil(prefix2)
+    end)
+  end)
+
   describe("format_alias()", function()
     it("should format translation to alias", function()
       assert.equals("eat-apple", ai_translate.format_alias "eat apple")
       assert.equals("hello-world", ai_translate.format_alias "Hello World")
       assert.equals("eat-an-apple", ai_translate.format_alias "Eat an apple.")
+    end)
+
+    it("should format with prefix", function()
+      assert.equals("31-next-permutation", ai_translate.format_alias("next permutation", "31_"))
+      assert.equals("123-test-text", ai_translate.format_alias("test text", "123_"))
     end)
 
     it("should handle edge cases", function()
@@ -56,6 +91,11 @@ end)
 describe("Note.needs_aliases_translation()", function()
   it("should return true for Chinese id with empty aliases", function()
     local note = Note.new("吃苹果", {}, {})
+    assert.is_true(note:needs_aliases_translation())
+  end)
+
+  it("should return true for number_prefix Chinese id", function()
+    local note = Note.new("31_下一个排列", {}, {})
     assert.is_true(note:needs_aliases_translation())
   end)
 

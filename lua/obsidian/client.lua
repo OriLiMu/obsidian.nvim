@@ -1933,10 +1933,13 @@ Client.update_frontmatter = function(self, note, bufnr)
     local client = self
     local current_bufnr = bufnr
 
+    -- Extract text to translate (handle "31_中文" pattern)
+    local text_to_translate, prefix = ai_translate.extract_translate_text(note.id)
+
     -- Start async translation
-    ai_translate.translate_async(note.id, ai_translate_opts, function(translated)
+    ai_translate.translate_async(text_to_translate, ai_translate_opts, function(translated)
       if translated then
-        local formatted_alias = ai_translate.format_alias(translated)
+        local formatted_alias = ai_translate.format_alias(translated, prefix)
 
         -- Update the note's aliases
         note.aliases = { formatted_alias }
