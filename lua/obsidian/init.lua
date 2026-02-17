@@ -195,22 +195,16 @@ obsidian.setup = function(opts)
     group = group,
     pattern = "*.md",
     callback = function(ev)
-      log.debug("[BufWritePre] Triggered for: %s", ev.match)
-
       local buf_dir = vim.fs.dirname(ev.match)
 
       -- Check if we're in a workspace.
       local workspace = obsidian.Workspace.get_workspace_for_dir(buf_dir, client.opts.workspaces)
       if not workspace then
-        log.debug("[BufWritePre] No workspace found for dir: %s", buf_dir)
         return
       end
 
-      log.debug("[BufWritePre] Found workspace: %s", workspace.name)
-
       -- Check if current buffer is actually a note within the workspace.
       if not client:path_is_note(ev.match, workspace) then
-        log.debug("[BufWritePre] Not a note: %s", ev.match)
         return
       end
 
@@ -227,13 +221,9 @@ obsidian.setup = function(opts)
       if result == "async" then
         -- Async translation started, cancel this save
         -- The callback will update the buffer and re-save
-        log.debug("[BufWritePre] Async translation started, cancelling save")
-        vim.notify("[Obsidian AI] Translating... save will complete automatically", vim.log.levels.INFO)
-        return false -- Cancel the save
+        return false
       elseif result == true then
         log.info "Updated frontmatter"
-      else
-        log.debug "[BufWritePre] Frontmatter not updated"
       end
     end,
   })

@@ -282,33 +282,24 @@ end
 ---
 ---@return boolean
 Client.should_save_frontmatter = function(self, note)
-  log.debug("[should_save_frontmatter] Checking note: %s", note.id)
-
   -- Check if the note is a template.
   local templates_dir = self:templates_dir()
   if templates_dir ~= nil then
     templates_dir = templates_dir:resolve()
     for _, parent in ipairs(note.path:parents()) do
       if parent == templates_dir then
-        log.debug("[should_save_frontmatter] Note is in templates dir, returning false")
         return false
       end
     end
   end
 
   if not note:should_save_frontmatter() then
-    log.debug("[should_save_frontmatter] note:should_save_frontmatter() returned false")
     return false
   elseif type(self.opts.disable_frontmatter) == "boolean" then
-    local result = not self.opts.disable_frontmatter
-    log.debug("[should_save_frontmatter] disable_frontmatter is boolean: %s, result: %s", self.opts.disable_frontmatter, result)
-    return result
+    return not self.opts.disable_frontmatter
   elseif type(self.opts.disable_frontmatter) == "function" then
-    local result = not self.opts.disable_frontmatter(tostring(self:vault_relative_path(note.path, { strict = true })))
-    log.debug("[should_save_frontmatter] disable_frontmatter is function, result: %s", result)
-    return result
+    return not self.opts.disable_frontmatter(tostring(self:vault_relative_path(note.path, { strict = true })))
   else
-    log.debug("[should_save_frontmatter] returning true (default)")
     return true
   end
 end
@@ -1920,10 +1911,8 @@ end
 ---@return boolean|string updated
 Client.update_frontmatter = function(self, note, bufnr)
   bufnr = bufnr or 0
-  log.debug("[update_frontmatter] Starting for note: %s", note.id)
 
   if not self:should_save_frontmatter(note) then
-    log.debug("[update_frontmatter] should_save_frontmatter returned false, skipping")
     return false
   end
 
@@ -1932,29 +1921,22 @@ Client.update_frontmatter = function(self, note, bufnr)
   local needs_translation = note:needs_aliases_translation()
 
   -- Check if this is a re-save after async translation completed
-  local buf_var = vim.b[bufnr].obsidian_ai_translation_done
-  if buf_var then
-    log.debug("[update_frontmatter] Re-save after AI translation, clearing flag")
+  if vim.b[bufnr].obsidian_ai_translation_done then
     vim.b[bufnr].obsidian_ai_translation_done = nil
     needs_translation = false
   end
 
   if ai_translate_opts and ai_translate_opts.enabled and needs_translation then
     local ai_translate = require "obsidian.ai_translate"
-    log.debug("[update_frontmatter] Starting async AI translation for: %s", note.id)
-    vim.notify("[Obsidian AI] Translating in background: " .. tostring(note.id), vim.log.levels.INFO)
 
     -- Store reference to client and note for callback
     local client = self
-    local note_id = note.id
     local current_bufnr = bufnr
 
     -- Start async translation
     ai_translate.translate_async(note.id, ai_translate_opts, function(translated)
       if translated then
         local formatted_alias = ai_translate.format_alias(translated)
-        log.debug("[update_frontmatter] Async translation complete: %s -> %s", note_id, formatted_alias)
-        vim.notify("[Obsidian AI] Translation complete: " .. formatted_alias, vim.log.levels.INFO)
 
         -- Update the note's aliases
         note.aliases = { formatted_alias }
@@ -1971,16 +1953,13 @@ Client.update_frontmatter = function(self, note, bufnr)
 
         -- Re-save the buffer
         vim.cmd("silent! write")
-        vim.notify("[Obsidian AI] Updated aliases and saved", vim.log.levels.INFO)
+        log.info("[Obsidian AI] Updated aliases: %s", formatted_alias)
       else
-        log.warn("[update_frontmatter] Async AI translation failed for: %s", note_id)
-        vim.notify("[Obsidian AI] Translation failed, saving without aliases", vim.log.levels.WARN)
-        -- Save anyway without translation
+        log.warn("[Obsidian AI] Translation failed for: %s", note.id)
         vim.cmd("silent! write")
       end
     end)
 
-    -- Return "async" to indicate save should be cancelled
     return "async"
   end
 
@@ -1989,10 +1968,7 @@ Client.update_frontmatter = function(self, note, bufnr)
     frontmatter = self.opts.note_frontmatter_func(note)
   end
 
-  local result = note:save_to_buffer { bufnr = bufnr, frontmatter = frontmatter }
-  log.debug("[update_frontmatter] save_to_buffer returned: %s", result)
-
-  return result
+  return note:save_to_buffer { bufnr = bufnr, frontmatter = frontmatter }
 end
 
 --- Get the path to a daily note.
