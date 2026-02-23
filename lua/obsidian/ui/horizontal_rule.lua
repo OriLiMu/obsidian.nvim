@@ -60,13 +60,12 @@ function HorizontalRule:_parse_horizontal_rules(bufnr)
 
     -- Match horizontal rules: 3 or more of the same character (-, *, _)
     -- Only match if the line contains only these characters and optional whitespace
-    local match_char, match_length = string.match(line, "^%s*([%-%*%_])%1%1[%-%*%_]*%s*$")
+    local match_char = string.match(line, "^%s*([%-%*%_])%1%1[%-%*%_]*%s*$")
 
-    if match_char and match_length then
-      local count = select(2, string.gsub(line, "%-%-*", "")) +
-                    select(2, string.gsub(line, "%*%**", "")) +
-                    select(2, string.gsub(line, "_%_*", ""))
-      count = math.max(count, 3)
+    if match_char then
+      -- Count the actual number of characters
+      local stripped_line = string.gsub(line, "%s+", "")
+      local count = #stripped_line
 
       local highlight = self:_get_highlight(match_char)
 
