@@ -571,6 +571,16 @@ local function update_extmarks(bufnr, ns_id, ui_opts)
       table_renderer:render(bufnr)
     end
   end
+
+  -- Update horizontal rule rendering if enabled
+  if ui_opts.horizontal_rule and ui_opts.horizontal_rule.enabled then
+    local HorizontalRule = require "obsidian.ui.horizontal_rule"
+    local client = require("obsidian").get_client()
+    if client then
+      local hr_renderer = HorizontalRule.new(client, ui_opts)
+      hr_renderer:render(bufnr)
+    end
+  end
 end
 
 ---@param ui_opts obsidian.config.UIOpts
@@ -723,6 +733,16 @@ M.setup = function(workspace, ui_opts)
         if client then
           local table_renderer = Table.new(client, ui_opts)
           table_renderer:clear(ev.buf)
+        end
+      end
+
+      -- Clear horizontal rule rendering if enabled
+      if ui_opts.horizontal_rule and ui_opts.horizontal_rule.enabled then
+        local HorizontalRule = require "obsidian.ui.horizontal_rule"
+        local client = require("obsidian").get_client()
+        if client then
+          local hr_renderer = HorizontalRule.new(client, ui_opts)
+          hr_renderer:clear(ev.buf)
         end
       end
     end,

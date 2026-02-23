@@ -438,6 +438,7 @@ end
 ---@field block_ids obsidian.config.UIStyleSpec
 ---@field heading obsidian.config.HeadingOpts
 ---@field table obsidian.config.TableOpts
+---@field horizontal_rule obsidian.config.HorizontalRuleOpts
 ---@field hl_groups table<string, table>
 config.UIOpts = {}
 
@@ -481,6 +482,15 @@ config.UIOpts = {}
 ---@field head string
 ---@field row string
 ---@field filler string
+
+---@class obsidian.config.HorizontalRuleOpts
+---@field enabled boolean
+---@field char string
+---@field style "full"|"original"|"custom"|"block"
+---@field width integer
+---@field block_width integer
+---@field padding integer|?
+---@field highlights table<string, string>
 
 ---@return obsidian.config.UIOpts
 config.UIOpts.default = function()
@@ -535,6 +545,19 @@ config.UIOpts.default = function()
       row = 'ObsidianTableRow',
       filler = 'ObsidianTableFill',
     },
+    horizontal_rule = {
+      enabled = false,
+      char = "─",
+      style = "full",
+      width = 80,
+      block_width = 80,
+      padding = nil,
+      highlights = {
+        ["-"] = "ObsidianHorizontalRule",
+        ["*"] = "ObsidianHorizontalRule",
+        ["_"] = "ObsidianHorizontalRule",
+      },
+    },
     hl_groups = {
       ObsidianTodo = { bold = true, fg = "#f78c6c" },
       ObsidianDone = { bold = true, fg = "#89ddff" },
@@ -565,6 +588,8 @@ config.UIOpts.default = function()
       ObsidianTableHead = { bold = true, fg = "#7dcfff" },
       ObsidianTableRow = { fg = "#c0caf5" },
       ObsidianTableFill = { fg = "#414868" },
+      -- Horizontal rule highlight groups
+      ObsidianHorizontalRule = { fg = "#565f89" },
     },
   }
 end
