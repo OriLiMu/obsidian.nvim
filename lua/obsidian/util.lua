@@ -505,53 +505,33 @@ end
 
 ---Toggle the checkbox on the line that the cursor is on.
 util.toggle_checkbox = function(opts, line_num)
-  local log = require "obsidian.log"
-  log.info "=== toggle_checkbox 函数开始执行 ==="
-
   -- Allow line_num to be optional, defaulting to the current line if not provided
   line_num = line_num or unpack(vim.api.nvim_win_get_cursor(0))
-  log.info("行号: %d", line_num)
-
   local line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
-  log.info("原始行内容: '%s'", line)
 
   local checkbox_pattern = "^%s*- %[.] "
   local checkboxes = opts or { " ", "x" }
-  log.info("复选框选项: %s", vim.inspect(checkboxes))
 
-  local matches_checkbox = string.match(line, checkbox_pattern)
-  log.info("是否匹配复选框模式: %s", tostring(matches_checkbox and true or false))
-
-  if not matches_checkbox then
+  if not string.match(line, checkbox_pattern) then
     local unordered_list_pattern = "^(%s*)[-*+] (.*)"
     if string.match(line, unordered_list_pattern) then
-      log.info "匹配无序列表模式，添加复选框"
       line = string.gsub(line, unordered_list_pattern, "%1- [ ] %2")
     else
-      log.info "不匹配任何模式，添加复选框"
       line = string.gsub(line, "^(%s*)", "%1- [ ] ")
     end
   else
-    log.info "已有复选框，进行切换"
     for i, check_char in enumerate(checkboxes) do
       if string.match(line, "^%s*- %[" .. util.escape_magic_characters(check_char) .. "%].*") then
-        log.info("找到匹配的复选框字符: '%s' (索引 %d)", check_char, i)
         if i == #checkboxes then
           i = 0
         end
-        local new_char = checkboxes[i + 1]
-        log.info("切换到新字符: '%s'", new_char)
-        line = util.string_replace(line, "- [" .. check_char .. "]", "- [" .. new_char .. "]", 1)
+        line = util.string_replace(line, "- [" .. check_char .. "]", "- [" .. checkboxes[i + 1] .. "]", 1)
         break
       end
     end
   end
-
-  log.info("新行内容: '%s'", line)
-  log.info "准备调用 nvim_buf_set_lines"
   -- 0-indexed
   vim.api.nvim_buf_set_lines(0, line_num - 1, line_num, true, { line })
-  log.info "=== toggle_checkbox 函数执行完毕 ==="
 end
 
 ---Determines if the given date is a working day (not weekend)
@@ -775,61 +755,18 @@ util.gf_passthrough = function()
 end
 
 util.smart_action = function()
-  local log = require "obsidian.log"
-
-  log.info "=== smart_action 开始执行 ==="
-  log.info("当前行: %s", vim.api.nvim_get_current_line())
-  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-  log.info("光标位置: row=%d, col=%d", row, col)
-
   -- follow link if possible
-  local on_link = util.cursor_on_markdown_link(nil, nil, true)
-  log.info("是否在链接上: %s", tostring(on_link))
-
-  if on_link then
-    local link_location, link_name, link_type = util.parse_cursor_link()
-    log.info("链接信息: location='%s', name='%s', type='%s'", link_location or "nil", link_name or "nil", link_type or "nil")
-
-    -- check here if the link is a web link
-    if link_type == "URL" or string.match(link_location or "", "^https?://") then
-      log.info "检测到URL链接，触发 ObsidianFollowLink"
-      vim.schedule(function()
-        log.info "执行 ObsidianFollowLink 命令"
-        vim.cmd "ObsidianFollowLink"
-      end)
-      return ""
-    end
-
-    -- 对于所有非URL链接（包括带锚点的链接），都直接调用 ObsidianFollowLink
-    -- ObsidianFollowLink 本身已经有完善的锚点处理逻辑，能正确分离文件名和锚点
-    log.info("检测到链接 '%s'，触发 ObsidianFollowLink", link_location or "未知")
+  if util.cursor_on_markdown_link(nil, nil, true) then
     vim.schedule(function()
-      log.info "执行 ObsidianFollowLink 命令"
       vim.cmd "ObsidianFollowLink"
     end)
     return ""
   end
 
-  -- toggle task if possible
-  -- cycles through your custom UI checkboxes, default: [ ] [~] [>] [x]
-  log.info "不在链接上，触发 ObsidianToggleCheckbox"
-  log.info("准备调用 vim.schedule")
-
+  -- toggle checkbox
   vim.schedule(function()
-    log.info "=== vim.schedule 回调开始执行 ==="
-    log.info("即将执行 ObsidianToggleCheckbox 命令")
-    local ok, err = pcall(function()
-      vim.cmd "ObsidianToggleCheckbox"
-    end)
-    if ok then
-      log.info "ObsidianToggleCheckbox 命令执行成功"
-    else
-      log.error("ObsidianToggleCheckbox 命令执行失败: %s", tostring(err))
-    end
-    log.info "=== vim.schedule 回调执行完毕 ==="
+    vim.cmd "ObsidianToggleCheckbox"
   end)
-
-  log.info "smart_action 返回空字符串"
   return ""
 end
 
