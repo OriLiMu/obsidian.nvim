@@ -745,7 +745,9 @@ end
 
 util.gf_passthrough = function()
   if util.cursor_on_markdown_link(nil, nil, true) then
-    vim.cmd "ObsidianFollowLink"
+    vim.schedule(function()
+      vim.cmd "ObsidianFollowLink"
+    end)
     return ""
   else
     return "gf"
@@ -762,21 +764,27 @@ util.smart_action = function()
     -- check here if the link is a web link
     if link_type == "URL" or string.match(link_location or "", "^https?://") then
       log.info "检测到URL链接，触发 ObsidianFollowLink"
-      vim.cmd "ObsidianFollowLink"
+      vim.schedule(function()
+        vim.cmd "ObsidianFollowLink"
+      end)
       return ""
     end
 
     -- 对于所有非URL链接（包括带锚点的链接），都直接调用 ObsidianFollowLink
     -- ObsidianFollowLink 本身已经有完善的锚点处理逻辑，能正确分离文件名和锚点
     log.info("检测到链接 '%s'，触发 ObsidianFollowLink", link_location or "未知")
-    vim.cmd "ObsidianFollowLink"
+    vim.schedule(function()
+      vim.cmd "ObsidianFollowLink"
+    end)
     return ""
   end
 
   -- toggle task if possible
   -- cycles through your custom UI checkboxes, default: [ ] [~] [>] [x]
   log.info "不在链接上，触发 ObsidianToggleCheckbox"
-  vim.cmd "ObsidianToggleCheckbox"
+  vim.schedule(function()
+    vim.cmd "ObsidianToggleCheckbox"
+  end)
   return ""
 end
 
