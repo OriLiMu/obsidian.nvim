@@ -887,10 +887,10 @@ Client.follow_link_async = function(self, link, opts)
       if res.link_type == search.RefTypes.Wiki or res.link_type == search.RefTypes.WikiWithAlias then
         -- Prompt to create a new note.
         if util.confirm("Create new note '" .. res.location .. "'?") then
-          -- Get picker for directory selection
-          local picker = self:picker()
-          if not picker then
-            log.err "No picker is configured"
+          -- Use fzf-lua directly for directory selection
+          local ok, fzf = pcall(require, "fzf-lua")
+          if not ok then
+            log.err "fzf-lua is not available"
             return
           end
 
@@ -915,64 +915,62 @@ Client.follow_link_async = function(self, link, opts)
           -- Sort directories alphabetically
           table.sort(dirs)
 
-          -- Create picker entries with relative paths
-          ---@type obsidian.PickerEntry[]
-          local entries = {}
           -- Add vault root as "." option
-          table.insert(entries, {
-            value = vault_path,
-            display = ".",
-            ordinal = ".",
-          })
-          for _, rel_path in ipairs(dirs) do
-            local full_path = vault_path .. "/" .. rel_path
-            table.insert(entries, {
-              value = full_path,
-              display = rel_path,
-              ordinal = rel_path,
-            })
-          end
+          table.insert(dirs, 1, ".")
 
-          -- Let user select directory
-          picker:pick(entries, {
-            prompt_title = "Select directory",
-            callback = function(selected_entry)
-              local save_dir = selected_entry
+          -- Use fzf-lua to select directory
+          fzf.fzf_exec(dirs, {
+            prompt = "Select Note Directory❯ ",
+            actions = {
+              ["default"] = function(selected)
+                if not selected or #selected == 0 then
+                  log.warn "Aborted"
+                  return
+                end
 
-              -- Let user enter filename (without .md suffix)
-              local filename = util.input("Enter filename (without .md): ", {})
-              if not filename or filename == "" then
-                log.warn "Aborted"
-                return
-              end
+                local rel_path = selected[1]
+                local save_dir
+                if rel_path == "." then
+                  save_dir = vault_path
+                else
+                  save_dir = vault_path .. "/" .. rel_path
+                end
 
-              -- Validate filename (no special characters)
-              if filename:match "[<>:\"/\\|?*]" then
-                log.warn "Filename contains invalid characters"
-                return
-              end
+                -- Let user enter filename (without .md suffix)
+                local filename = util.input("Enter filename (without .md): ", {})
+                if not filename or filename == "" then
+                  log.warn "Aborted"
+                  return
+                end
 
-              -- Create note with user-specified directory and filename
-              ---@type string|?, string[]
-              local id, aliases
-              if res.name == res.location then
-                aliases = {}
-              else
-                aliases = { res.name }
-                id = filename
-              end
+                -- Validate filename (no special characters)
+                if filename:match "[<>:\"/\\|?*]" then
+                  log.warn "Filename contains invalid characters"
+                  return
+                end
 
-              local note = self:create_note { title = res.name, id = filename, dir = save_dir, aliases = aliases, no_write = true }
-              if note == nil then
-                return
-              end
-              return self:open_note(note, {
-                open_strategy = opts.open_strategy,
-                callback = function(bufnr)
-                  self:write_note_to_buffer(note, { bufnr = bufnr })
-                end,
-              })
-            end,
+                -- Create note with user-specified directory and filename
+                ---@type string|?, string[]
+                local id, aliases
+                if res.name == res.location then
+                  aliases = {}
+                else
+                  aliases = { res.name }
+                  id = filename
+                end
+
+                local note = self:create_note { title = res.name, id = filename, dir = save_dir, aliases = aliases, no_write = true }
+                if note == nil then
+                  return
+                end
+                return self:open_note(note, {
+                  open_strategy = opts.open_strategy,
+                  callback = function(bufnr)
+                    self:write_note_to_buffer(note, { bufnr = bufnr })
+                  end,
+                })
+              end,
+            },
           })
         else
           log.warn "Aborted"
