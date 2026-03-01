@@ -887,17 +887,47 @@ Client.follow_link_async = function(self, link, opts)
       if res.link_type == search.RefTypes.Wiki or res.link_type == search.RefTypes.WikiWithAlias then
         -- Prompt to create a new note.
         if util.confirm("Create new note '" .. res.location .. "'?") then
-          -- Create a new note.
+          -- Step 1: Get default directory (current buffer directory or vault root)
+          local default_dir = self.buf_dir or self.dir
+
+          -- Step 2: Let user select save directory
+          local save_dir = util.input("Select save directory: ", {
+            completion = "file",
+            default = tostring(default_dir),
+          })
+
+          if not save_dir or save_dir == "" then
+            log.warn "Aborted"
+            return
+          end
+
+          -- Step 3: Let user enter filename (without .md suffix)
+          local filename = util.input("Enter filename (without .md): ", {})
+          if not filename or filename == "" then
+            log.warn "Aborted"
+            return
+          end
+
+          -- Step 4: Validate filename (no special characters)
+          if filename:match "[<>:\"/\\|?*]" then
+            log.warn "Filename contains invalid characters"
+            return
+          end
+
+          -- Create note with user-specified directory and filename
           ---@type string|?, string[]
           local id, aliases
           if res.name == res.location then
             aliases = {}
           else
             aliases = { res.name }
-            id = res.location
+            id = filename
           end
 
-          local note = self:create_note { title = res.name, id = id, aliases = aliases, no_write = true }
+          local note = self:create_note { title = res.name, id = filename, dir = save_dir, aliases = aliases, no_write = true }
+          if note == nil then
+            return
+          end
           return self:open_note(note, {
             open_strategy = opts.open_strategy,
             callback = function(bufnr)
