@@ -887,51 +887,77 @@ Client.follow_link_async = function(self, link, opts)
       if res.link_type == search.RefTypes.Wiki or res.link_type == search.RefTypes.WikiWithAlias then
         -- Prompt to create a new note.
         if util.confirm("Create new note '" .. res.location .. "'?") then
-          -- Step 1: Get default directory (current buffer directory or vault root)
-          local default_dir = self.buf_dir or self.dir
-
-          -- Step 2: Let user select save directory
-          local save_dir = util.input("Select save directory: ", {
-            completion = "file",
-            default = tostring(default_dir),
-          })
-
-          if not save_dir or save_dir == "" then
-            log.warn "Aborted"
+          -- Get picker for directory selection
+          local picker = self:picker()
+          if not picker then
+            log.err "No picker is configured"
             return
           end
 
-          -- Step 3: Let user enter filename (without .md suffix)
-          local filename = util.input("Enter filename (without .md): ", {})
-          if not filename or filename == "" then
-            log.warn "Aborted"
-            return
+          -- Collect all directories in vault
+          local dirs = {}
+          local scan = vim.fn.systemlist("find " .. vim.fn.shellescape(tostring(self.dir)) .. " -type d -not -path '*/\\.*'")
+          for _, dir in ipairs(scan) do
+            if dir and dir ~= "" then
+              table.insert(dirs, dir)
+            end
           end
 
-          -- Step 4: Validate filename (no special characters)
-          if filename:match "[<>:\"/\\|?*]" then
-            log.warn "Filename contains invalid characters"
-            return
+          -- Sort directories alphabetically
+          table.sort(dirs)
+
+          -- Create picker entries with relative paths
+          ---@type obsidian.PickerEntry[]
+          local entries = {}
+          for _, dir in ipairs(dirs) do
+            local rel_path = tostring(self:vault_relative_path(Path.new(dir))) or dir
+            table.insert(entries, {
+              value = dir,
+              display = rel_path,
+              ordinal = rel_path,
+              filename = dir,
+            })
           end
 
-          -- Create note with user-specified directory and filename
-          ---@type string|?, string[]
-          local id, aliases
-          if res.name == res.location then
-            aliases = {}
-          else
-            aliases = { res.name }
-            id = filename
-          end
+          -- Let user select directory
+          picker:pick(entries, {
+            prompt_title = "Select directory",
+            callback = function(selected_entry)
+              local save_dir = selected_entry
 
-          local note = self:create_note { title = res.name, id = filename, dir = save_dir, aliases = aliases, no_write = true }
-          if note == nil then
-            return
-          end
-          return self:open_note(note, {
-            open_strategy = opts.open_strategy,
-            callback = function(bufnr)
-              self:write_note_to_buffer(note, { bufnr = bufnr })
+              -- Let user enter filename (without .md suffix)
+              local filename = util.input("Enter filename (without .md): ", {})
+              if not filename or filename == "" then
+                log.warn "Aborted"
+                return
+              end
+
+              -- Validate filename (no special characters)
+              if filename:match "[<>:\"/\\|?*]" then
+                log.warn "Filename contains invalid characters"
+                return
+              end
+
+              -- Create note with user-specified directory and filename
+              ---@type string|?, string[]
+              local id, aliases
+              if res.name == res.location then
+                aliases = {}
+              else
+                aliases = { res.name }
+                id = filename
+              end
+
+              local note = self:create_note { title = res.name, id = filename, dir = save_dir, aliases = aliases, no_write = true }
+              if note == nil then
+                return
+              end
+              return self:open_note(note, {
+                open_strategy = opts.open_strategy,
+                callback = function(bufnr)
+                  self:write_note_to_buffer(note, { bufnr = bufnr })
+                end,
+              })
             end,
           })
         else
