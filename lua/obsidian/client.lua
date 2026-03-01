@@ -1966,6 +1966,12 @@ Client.update_frontmatter = function(self, note, bufnr)
     return "async"
   end
 
+  -- Format existing aliases with spaces to Title-Case-With-Hyphens
+  local ai_translate = require "obsidian.ai_translate"
+  if note.aliases and #note.aliases > 0 then
+    note.aliases = ai_translate.format_aliases(note.aliases)
+  end
+
   local frontmatter = nil
   if self.opts.note_frontmatter_func ~= nil then
     frontmatter = self.opts.note_frontmatter_func(note)

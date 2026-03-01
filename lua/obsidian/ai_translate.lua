@@ -51,6 +51,57 @@ M.format_alias = function(translated_text, prefix)
   return result
 end
 
+--- Check if alias needs formatting (contains spaces)
+---@param alias string
+---@return boolean
+M.needs_formatting = function(alias)
+  if not alias or alias == "" then
+    return false
+  end
+  return alias:match("%s") ~= nil
+end
+
+--- Convert string to Title-Case-With-Hyphens
+--- Example: "How to break down notes" -> "How-To-Break-Down-Notes"
+---@param str string
+---@return string
+M.format_alias_title_case = function(str)
+  if not str or str == "" then
+    return ""
+  end
+
+  -- Split by spaces
+  local words = {}
+  for word in str:gmatch("%S+") do
+    -- Capitalize first letter of each word
+    local capitalized = word:sub(1, 1):upper() .. word:sub(2):lower()
+    table.insert(words, capitalized)
+  end
+
+  -- Join with hyphens
+  return table.concat(words, "-")
+end
+
+--- Format all aliases in a note that contain spaces
+---@param aliases string[]
+---@return string[] formatted_aliases
+M.format_aliases = function(aliases)
+  if not aliases then
+    return {}
+  end
+
+  local formatted = {}
+  for _, alias in ipairs(aliases) do
+    if M.needs_formatting(alias) then
+      table.insert(formatted, M.format_alias_title_case(alias))
+    else
+      table.insert(formatted, alias)
+    end
+  end
+
+  return formatted
+end
+
 --- Translate text using AI API (synchronous - blocks)
 ---@param text string Text to translate
 ---@param opts { api_url: string, api_key: string, model: string, timeout: integer }
