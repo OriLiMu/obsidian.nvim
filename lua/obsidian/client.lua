@@ -894,14 +894,23 @@ Client.follow_link_async = function(self, link, opts)
             return
           end
 
-          -- Collect all directories in vault
+          -- Collect all directories in vault using vim.fs.dir
+          local vault_path = tostring(self.dir)
           local dirs = {}
-          local scan = vim.fn.systemlist("find " .. vim.fn.shellescape(tostring(self.dir)) .. " -type d -not -path '*/\\.*'")
-          for _, dir in ipairs(scan) do
-            if dir and dir ~= "" then
-              table.insert(dirs, dir)
+
+          local function get_dirs(path, relative)
+            for name, type in vim.fs.dir(path) do
+              -- Exclude hidden directories starting with .
+              if type == "directory" and not name:match "^%." then
+                local full_path = path .. "/" .. name
+                local rel_path = relative ~= "" and (relative .. "/" .. name) or name
+                table.insert(dirs, rel_path)
+                get_dirs(full_path, rel_path)
+              end
             end
           end
+
+          get_dirs(vault_path, "")
 
           -- Sort directories alphabetically
           table.sort(dirs)
@@ -909,14 +918,18 @@ Client.follow_link_async = function(self, link, opts)
           -- Create picker entries with relative paths
           ---@type obsidian.PickerEntry[]
           local entries = {}
-          for _, dir in ipairs(dirs) do
-            local rel_path = self:vault_relative_path(Path.new(dir))
-            rel_path = rel_path and tostring(rel_path) or dir
+          -- Add vault root as "." option
+          table.insert(entries, {
+            value = vault_path,
+            display = ".",
+            ordinal = ".",
+          })
+          for _, rel_path in ipairs(dirs) do
+            local full_path = vault_path .. "/" .. rel_path
             table.insert(entries, {
-              value = dir,
+              value = full_path,
               display = rel_path,
               ordinal = rel_path,
-              filename = dir,
             })
           end
 
