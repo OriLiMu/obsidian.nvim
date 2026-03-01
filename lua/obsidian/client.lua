@@ -921,6 +921,9 @@ Client.follow_link_async = function(self, link, opts)
           -- Use fzf-lua to select directory
           fzf.fzf_exec(dirs, {
             prompt = "Select Note Directory❯ ",
+            fzf_opts = {
+              ["--ignore-case"] = true,
+            },
             actions = {
               ["default"] = function(selected)
                 if not selected or #selected == 0 then
