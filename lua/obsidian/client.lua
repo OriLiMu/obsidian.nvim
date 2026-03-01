@@ -910,7 +910,8 @@ Client.follow_link_async = function(self, link, opts)
           ---@type obsidian.PickerEntry[]
           local entries = {}
           for _, dir in ipairs(dirs) do
-            local rel_path = tostring(self:vault_relative_path(Path.new(dir))) or dir
+            local rel_path = self:vault_relative_path(Path.new(dir))
+            rel_path = rel_path and tostring(rel_path) or dir
             table.insert(entries, {
               value = dir,
               display = rel_path,
