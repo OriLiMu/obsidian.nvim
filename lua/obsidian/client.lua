@@ -939,18 +939,8 @@ Client.follow_link_async = function(self, link, opts)
                   save_dir = vault_path .. "/" .. rel_path
                 end
 
-                -- Let user enter filename (without .md suffix)
-                local filename = util.input("Enter filename (without .md): ", {})
-                if not filename or filename == "" then
-                  log.warn "Aborted"
-                  return
-                end
-
-                -- Validate filename (no special characters)
-                if filename:match "[<>:\"/\\|?*]" then
-                  log.warn "Filename contains invalid characters"
-                  return
-                end
+                -- Use link location as filename
+                local filename = res.location
 
                 -- Create note with user-specified directory and filename
                 ---@type string|?, string[]
