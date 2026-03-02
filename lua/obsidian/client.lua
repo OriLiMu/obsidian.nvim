@@ -884,9 +884,57 @@ Client.follow_link_async = function(self, link, opts)
         return
       end
 
-      if res.link_type == search.RefTypes.Wiki or res.link_type == search.RefTypes.WikiWithAlias then
+      local can_create_from_link_type = res.link_type == search.RefTypes.Wiki
+        or res.link_type == search.RefTypes.WikiWithAlias
+        or res.link_type == search.RefTypes.Markdown
+
+      if can_create_from_link_type then
         -- Prompt to create a new note.
         if util.confirm("Create new note '" .. res.location .. "'?") then
+          local filename = res.location
+          filename = filename:gsub("/", "-")
+
+          ---@param save_dir string|obsidian.Path
+          ---@param create_opts { add_task_tag: boolean|? }|?
+          local function create_note_in_dir(save_dir, create_opts)
+            create_opts = create_opts or {}
+
+            ---@type string|?, string[]
+            local id, aliases
+            if res.name == res.location then
+              aliases = {}
+            else
+              aliases = { res.name }
+              id = filename
+            end
+
+            local note = self:create_note {
+              title = res.name,
+              id = filename,
+              dir = save_dir,
+              aliases = aliases,
+              tags = create_opts.add_task_tag and { "task" } or nil,
+              no_write = true,
+            }
+            if note == nil then
+              return
+            end
+
+            return self:open_note(note, {
+              open_strategy = opts.open_strategy,
+              callback = function(bufnr)
+                self:write_note_to_buffer(note, { bufnr = bufnr })
+              end,
+            })
+          end
+
+          local checkbox_new_note_dir = self.opts.checkbox_new_note_dir
+          local is_checkbox_line = util.is_checkbox_task_line(vim.api.nvim_get_current_line())
+
+          if checkbox_new_note_dir ~= nil and is_checkbox_line then
+            return create_note_in_dir(self.dir / checkbox_new_note_dir, { add_task_tag = true })
+          end
+
           -- Use fzf-lua directly for directory selection
           local ok, fzf = pcall(require, "fzf-lua")
           if not ok then
@@ -939,29 +987,7 @@ Client.follow_link_async = function(self, link, opts)
                   save_dir = vault_path .. "/" .. rel_path
                 end
 
-                -- Use link location as filename
-                local filename = res.location
-
-                -- Create note with user-specified directory and filename
-                ---@type string|?, string[]
-                local id, aliases
-                if res.name == res.location then
-                  aliases = {}
-                else
-                  aliases = { res.name }
-                  id = filename
-                end
-
-                local note = self:create_note { title = res.name, id = filename, dir = save_dir, aliases = aliases, no_write = true }
-                if note == nil then
-                  return
-                end
-                return self:open_note(note, {
-                  open_strategy = opts.open_strategy,
-                  callback = function(bufnr)
-                    self:write_note_to_buffer(note, { bufnr = bufnr })
-                  end,
-                })
+                return create_note_in_dir(save_dir)
               end,
             },
           })
