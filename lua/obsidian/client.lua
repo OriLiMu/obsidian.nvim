@@ -928,69 +928,97 @@ Client.follow_link_async = function(self, link, opts)
             })
           end
 
+          ---@param create_opts { add_task_tag: boolean|? }|?
+          local function pick_dir_and_create(create_opts)
+            -- Use fzf-lua directly for directory selection
+            local ok, fzf = pcall(require, "fzf-lua")
+            if not ok then
+              log.err "fzf-lua is not available"
+              return
+            end
+
+            -- Collect all directories in vault using vim.fs.dir
+            local vault_path = tostring(self.dir)
+            local dirs = {}
+
+            local function get_dirs(path, relative)
+              for name, type in vim.fs.dir(path) do
+                -- Exclude hidden directories starting with .
+                if type == "directory" and not name:match "^%." then
+                  local full_path = path .. "/" .. name
+                  local rel_path = relative ~= "" and (relative .. "/" .. name) or name
+                  table.insert(dirs, rel_path)
+                  get_dirs(full_path, rel_path)
+                end
+              end
+            end
+
+            get_dirs(vault_path, "")
+
+            -- Sort directories alphabetically
+            table.sort(dirs)
+
+            -- Add vault root as "." option
+            table.insert(dirs, 1, ".")
+
+            -- Use fzf-lua to select directory
+            fzf.fzf_exec(dirs, {
+              prompt = "Select Note Directory❯ ",
+              fzf_opts = {
+                ["--ignore-case"] = true,
+              },
+              actions = {
+                ["default"] = function(selected)
+                  if not selected or #selected == 0 then
+                    log.warn "Aborted"
+                    return
+                  end
+
+                  local rel_path = selected[1]
+                  local save_dir
+                  if rel_path == "." then
+                    save_dir = vault_path
+                  else
+                    save_dir = vault_path .. "/" .. rel_path
+                  end
+
+                  return create_note_in_dir(save_dir, create_opts)
+                end,
+              },
+            })
+          end
+
           local checkbox_new_note_dir = self.opts.checkbox_new_note_dir
           local is_checkbox_line = util.is_checkbox_task_line(vim.api.nvim_get_current_line())
 
           if checkbox_new_note_dir ~= nil and is_checkbox_line then
-            return create_note_in_dir(self.dir / checkbox_new_note_dir, { add_task_tag = true })
-          end
+            local create_mode_options = {
+              { value = "direct", label = "Create directly in checkbox_new_note_dir" },
+              { value = "pick_dir", label = "Choose a folder before creating" },
+            }
 
-          -- Use fzf-lua directly for directory selection
-          local ok, fzf = pcall(require, "fzf-lua")
-          if not ok then
-            log.err "fzf-lua is not available"
+            vim.ui.select(create_mode_options, {
+              prompt = "Create note:",
+              format_item = function(item)
+                return item.label
+              end,
+            }, function(choice)
+              if choice == nil then
+                log.warn "Aborted"
+                return
+              end
+
+              if choice.value == "direct" then
+                create_note_in_dir(self.dir / checkbox_new_note_dir, { add_task_tag = true })
+                return
+              end
+
+              pick_dir_and_create { add_task_tag = true }
+            end)
             return
           end
 
-          -- Collect all directories in vault using vim.fs.dir
-          local vault_path = tostring(self.dir)
-          local dirs = {}
-
-          local function get_dirs(path, relative)
-            for name, type in vim.fs.dir(path) do
-              -- Exclude hidden directories starting with .
-              if type == "directory" and not name:match "^%." then
-                local full_path = path .. "/" .. name
-                local rel_path = relative ~= "" and (relative .. "/" .. name) or name
-                table.insert(dirs, rel_path)
-                get_dirs(full_path, rel_path)
-              end
-            end
-          end
-
-          get_dirs(vault_path, "")
-
-          -- Sort directories alphabetically
-          table.sort(dirs)
-
-          -- Add vault root as "." option
-          table.insert(dirs, 1, ".")
-
-          -- Use fzf-lua to select directory
-          fzf.fzf_exec(dirs, {
-            prompt = "Select Note Directory❯ ",
-            fzf_opts = {
-              ["--ignore-case"] = true,
-            },
-            actions = {
-              ["default"] = function(selected)
-                if not selected or #selected == 0 then
-                  log.warn "Aborted"
-                  return
-                end
-
-                local rel_path = selected[1]
-                local save_dir
-                if rel_path == "." then
-                  save_dir = vault_path
-                else
-                  save_dir = vault_path .. "/" .. rel_path
-                end
-
-                return create_note_in_dir(save_dir)
-              end,
-            },
-          })
+          return pick_dir_and_create()
         else
           log.warn "Aborted"
           return
