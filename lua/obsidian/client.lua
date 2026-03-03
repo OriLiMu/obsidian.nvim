@@ -2034,6 +2034,10 @@ Client.update_frontmatter = function(self, note, bufnr)
   -- Check if we need to translate aliases using AI
   local ai_translate_opts = self.opts.ai_translate
   local needs_translation = note:needs_aliases_translation()
+  local translation_in_progress = vim.b[bufnr].obsidian_ai_translation_in_progress
+  local has_api_key = ai_translate_opts
+    and ai_translate_opts.api_key ~= nil
+    and ai_translate_opts.api_key ~= ""
 
   -- Check if this is a re-save after async translation completed
   if vim.b[bufnr].obsidian_ai_translation_done then
@@ -2041,7 +2045,18 @@ Client.update_frontmatter = function(self, note, bufnr)
     needs_translation = false
   end
 
-  if ai_translate_opts and ai_translate_opts.enabled and needs_translation then
+  -- 正在翻译时给出提示并阻止重复触发翻译请求。
+  if translation_in_progress then
+    log.info "[Obsidian AI] 正在翻译英文 aliases，请稍候..."
+    return "async"
+  end
+
+  -- 已启用翻译但未配置 key 时，仅提示并跳过翻译流程。
+  if ai_translate_opts and ai_translate_opts.enabled and needs_translation and not has_api_key then
+    log.warn_once "[Obsidian AI] 已启用英文 aliases 翻译，但未配置 api_key，已跳过翻译。"
+  end
+
+  if ai_translate_opts and ai_translate_opts.enabled and needs_translation and has_api_key then
     local ai_translate = require "obsidian.ai_translate"
 
     -- Store reference to client and note for callback
@@ -2051,16 +2066,19 @@ Client.update_frontmatter = function(self, note, bufnr)
     -- Extract text to translate (handle "31_中文" pattern)
     local text_to_translate, prefix = ai_translate.extract_translate_text(note.id)
 
+    vim.b[current_bufnr].obsidian_ai_translation_in_progress = true
+    log.info "[Obsidian AI] 正在翻译英文 aliases，请稍候..."
+
     -- Start async translation
     ai_translate.translate_async(text_to_translate, ai_translate_opts, function(translated)
+      vim.b[current_bufnr].obsidian_ai_translation_in_progress = nil
+      vim.b[current_bufnr].obsidian_ai_translation_done = true
+
       if translated then
         local formatted_alias = ai_translate.format_alias(translated, prefix)
 
         -- Update the note's aliases
         note.aliases = { formatted_alias }
-
-        -- Mark that translation is done so next save doesn't re-translate
-        vim.b[current_bufnr].obsidian_ai_translation_done = true
 
         -- Save frontmatter to buffer
         local frontmatter = nil
