@@ -989,7 +989,10 @@ Client.follow_link_async = function(self, link, opts)
           end
 
           local checkbox_new_note_dir = self.opts.checkbox_new_note_dir
-          local is_checkbox_line = util.is_checkbox_task_line(vim.api.nvim_get_current_line())
+          local is_checkbox_line = false
+          if type(util.is_checkbox_task_line) == "function" then
+            is_checkbox_line = util.is_checkbox_task_line(vim.api.nvim_get_current_line())
+          end
 
           if checkbox_new_note_dir ~= nil and is_checkbox_line then
             local create_mode_options = {

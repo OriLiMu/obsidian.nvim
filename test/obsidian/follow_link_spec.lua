@@ -191,4 +191,58 @@ describe("Client.follow_link_async()", function()
       error(err)
     end
   end)
+
+  it("should not crash when is_checkbox_task_line is missing", function()
+    local created_dir, created_tags = nil, nil
+    local fzf_called = false
+    local tmp_dir = Path.temp { suffix = "-obsidian" }
+    tmp_dir:mkdir { parents = true, exist_ok = true }
+
+    local client = make_client(tmp_dir)
+
+    client.create_note = function(_, opts)
+      created_dir = opts.dir
+      created_tags = opts.tags
+      return { path = tmp_dir / "apple-pear.md" }
+    end
+
+    local original_confirm = util.confirm
+    local original_is_checkbox_task_line = util.is_checkbox_task_line
+    local original_fzf = package.loaded["fzf-lua"]
+
+    local ok, err = pcall(function()
+      util.confirm = function(_)
+        return true
+      end
+
+      util.is_checkbox_task_line = nil
+
+      package.loaded["fzf-lua"] = {
+        fzf_exec = function(_, opts)
+          fzf_called = true
+          opts.actions["default"] { "." }
+        end,
+      }
+
+      Client.follow_link_async(client, "[[apple /pear]]")
+
+      local done = vim.wait(1000, function()
+        return created_dir ~= nil
+      end, 10)
+
+      assert.is_true(done)
+      assert.is_true(fzf_called)
+      assert.equals(tostring(tmp_dir), tostring(created_dir))
+      assert.equals(nil, created_tags)
+    end)
+
+    util.confirm = original_confirm
+    util.is_checkbox_task_line = original_is_checkbox_task_line
+    package.loaded["fzf-lua"] = original_fzf
+    tmp_dir:rmtree()
+
+    if not ok then
+      error(err)
+    end
+  end)
 end)

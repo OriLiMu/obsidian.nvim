@@ -503,6 +503,22 @@ util.zettel_id = function()
   return tostring(os.time()) .. "-" .. suffix
 end
 
+---判断一行是否为 Markdown 任务复选框项。
+---
+---@param line string|nil
+---@return boolean
+util.is_checkbox_task_line = function(line)
+  if line == nil then
+    line = vim.api.nvim_get_current_line()
+  end
+
+  if type(line) ~= "string" then
+    return false
+  end
+
+  return string.match(line, "^%s*[-*+] %[[^%]]%]%s+%S") ~= nil
+end
+
 ---Toggle the checkbox on the line that the cursor is on.
 util.toggle_checkbox = function(opts, line_num)
   -- Allow line_num to be optional, defaulting to the current line if not provided
