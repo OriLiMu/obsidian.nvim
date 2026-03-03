@@ -598,6 +598,14 @@ carefully and customize it to your needs:
           return string.format("![%s](%s)", path.name, path)
         end,
       },
+
+      ai_translate = {
+        enabled = false,
+        api_url = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+        api_key = "",
+        model = "glm-4.5-flash",
+        timeout = 10000,
+      },
     }
 <
 

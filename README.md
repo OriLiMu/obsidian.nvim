@@ -565,6 +565,14 @@ This is a complete list of all of the options that can be passed to `require("ob
     width = "30%",
     max_files = 5
   },
+
+  ai_translate = {
+    enabled = false,
+    api_url = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+    api_key = "",
+    model = "glm-4.5-flash",
+    timeout = 10000,
+  },
 }
 ```
 
