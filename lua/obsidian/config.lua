@@ -315,7 +315,7 @@ config.KnownNotesCompletionOpts = {}
 ---@return obsidian.config.KnownNotesCompletionOpts
 config.KnownNotesCompletionOpts.default = function()
   return {
-    min_chars = 3,
+    min_chars = 2,
     notes_root = nil,
     case_sensitive = false,
   }

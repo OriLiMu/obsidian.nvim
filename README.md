@@ -278,8 +278,8 @@ This is a complete list of all of the options that can be passed to `require("ob
     min_chars = 2,
     -- Optional, known note completion outside of `[[...]]`.
     known_notes = {
-      -- Trigger known note completion at 3 chars.
-      min_chars = 3,
+      -- Trigger known note completion at 2 chars.
+      min_chars = 2,
       -- Optional, where to index notes for known note completion.
       -- Defaults to the active workspace / vault root.
       notes_root = nil,

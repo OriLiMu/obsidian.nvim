@@ -8,7 +8,7 @@ describe("config.ClientOpts.default()", function()
 
   it("should set known notes completion defaults", function()
     local opts = config.ClientOpts.default()
-    assert.equals(3, opts.completion.known_notes.min_chars)
+    assert.equals(2, opts.completion.known_notes.min_chars)
     assert.is_nil(opts.completion.known_notes.notes_root)
     assert.is_false(opts.completion.known_notes.case_sensitive)
   end)

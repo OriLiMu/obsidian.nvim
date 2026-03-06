@@ -55,7 +55,7 @@ KnownNotesIndex.new = function(client)
   self._tokens_by_path = {}
   self._tokens_sorted = {}
   self._opts = {
-    min_chars = 3,
+    min_chars = 2,
     notes_root = nil,
     case_sensitive = false,
   }
