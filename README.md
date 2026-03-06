@@ -276,6 +276,16 @@ This is a complete list of all of the options that can be passed to `require("ob
     nvim_cmp = true,
     -- Trigger completion at 2 chars.
     min_chars = 2,
+    -- Optional, known note completion outside of `[[...]]`.
+    known_notes = {
+      -- Trigger known note completion at 3 chars.
+      min_chars = 3,
+      -- Optional, where to index notes for known note completion.
+      -- Defaults to the active workspace / vault root.
+      notes_root = nil,
+      -- Optional, whether known note completion is case sensitive.
+      case_sensitive = false,
+    },
   },
 
   -- Optional, configure key mappings. These are the defaults. If you don't want to set any keymappings this
@@ -645,6 +655,8 @@ See [using obsidian.nvim outside of a workspace / Obsidian vault](#usage-outside
 obsidian.nvim will set itself up as an nvim-cmp source automatically when you enter a markdown buffer within your vault directory, you do **not** need to specify this plugin as a cmp source manually.
 
 Note that in order to trigger completion for tags _within YAML frontmatter_ you still need to type the "#" at the start of the tag. obsidian.nvim will remove the "#" when you hit enter on the tag completion item.
+
+Known note completion will also trigger in markdown buffers when a plain term reaches `completion.known_notes.min_chars`. It matches indexed note filenames and frontmatter `aliases`, and inserts wiki links like `[[My-Note]]`.
 
 #### Syntax highlighting
 
