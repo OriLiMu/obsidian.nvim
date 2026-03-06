@@ -33,7 +33,19 @@ describe("cmp_obsidian_known_notes.find_current_term()", function()
   end)
 end)
 
+describe("cmp_obsidian_known_notes.get_keyword_pattern()", function()
+  it("should include hyphenated terms", function()
+    local regex = vim.regex(source_mod.get_keyword_pattern())
+    assert.is_not_nil(regex:match_str "ai-")
+    assert.is_not_nil(regex:match_str "note-")
+  end)
+end)
+
 describe("cmp_obsidian_known_notes.Source", function()
+  it("should expose '-' as trigger character", function()
+    assert.is_true(vim.tbl_contains(source_mod.get_trigger_characters(), "-"))
+  end)
+
   it("should not return candidates for non-markdown filetype", function()
     local bufnr = vim.api.nvim_create_buf(false, true)
     vim.bo[bufnr].filetype = "lua"

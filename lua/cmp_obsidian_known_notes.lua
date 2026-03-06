@@ -2,6 +2,10 @@ local abc = require "obsidian.abc"
 local obsidian = require "obsidian"
 local util = require "obsidian.util"
 
+-- 与 cmp 的关键词匹配保持同一套字符定义，避免 '-' 被截断。
+local TERM_PATTERN_LUA = "([%w_%-]+)$"
+local TERM_PATTERN_VIM = [[[-0-9A-Za-z_]\+]]
+
 ---@class cmp_obsidian_known_notes.Source : obsidian.ABC
 ---@field _request_id integer
 local source = abc.new_class()
@@ -13,11 +17,12 @@ source.new = function()
 end
 
 source.get_trigger_characters = function()
-  return {}
+  -- 显式把 '-' 作为触发字符，保证输入如 'note-' 时会重新触发补全。
+  return { "-" }
 end
 
 source.get_keyword_pattern = function()
-  return [=[[^[:space:]\[\]\(\){}<>"'`|,.;:!?/\\]\+]=]
+  return TERM_PATTERN_VIM
 end
 
 ---@param request table
@@ -28,12 +33,11 @@ source.find_current_term = function(request)
     return nil
   end
 
-  local start_idx = string.find(before, "[^%s%[%]%(%){}<>'\"`|,.;:!?/\\]+$")
-  if start_idx == nil then
+  local term = string.match(before, TERM_PATTERN_LUA)
+  if term == nil then
     return nil
   end
 
-  local term = string.sub(before, start_idx)
   if string.len(term) == 0 or util.is_whitespace(term) then
     return nil
   end
