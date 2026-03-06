@@ -12,6 +12,7 @@ local module_lookups = {
   log = "obsidian.log",
   img_paste = "obsidian.img_paste",
   itertools = "obsidian.itertools",
+  known_notes_index = "obsidian.known_notes_index",
   mappings = "obsidian.mappings",
   Note = "obsidian.note",
   Path = "obsidian.path",
@@ -110,6 +111,7 @@ obsidian.setup = function(opts)
     cmp.register_source("obsidian", require("cmp_obsidian").new())
     cmp.register_source("obsidian_new", require("cmp_obsidian_new").new())
     cmp.register_source("obsidian_tags", require("cmp_obsidian_tags").new())
+    cmp.register_source("obsidian_known_notes", require("cmp_obsidian_known_notes").new())
   end
 
   local group = vim.api.nvim_create_augroup("obsidian_setup", { clear = true })
@@ -151,9 +153,15 @@ obsidian.setup = function(opts)
           { name = "obsidian" },
           { name = "obsidian_new" },
           { name = "obsidian_tags" },
+          { name = "obsidian_known_notes" },
         }
         for _, source in pairs(cmp.get_config().sources) do
-          if source.name ~= "obsidian" and source.name ~= "obsidian_new" and source.name ~= "obsidian_tags" then
+          if
+            source.name ~= "obsidian"
+            and source.name ~= "obsidian_new"
+            and source.name ~= "obsidian_tags"
+            and source.name ~= "obsidian_known_notes"
+          then
             table.insert(sources, source)
           end
         end
@@ -224,6 +232,36 @@ obsidian.setup = function(opts)
         return false
       elseif result == true then
         log.info "Updated frontmatter"
+      end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+    group = group,
+    pattern = "*.md",
+    callback = function(ev)
+      if client.known_notes_index then
+        client.known_notes_index:on_note_saved(ev.match)
+      end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ "BufDelete" }, {
+    group = group,
+    pattern = "*.md",
+    callback = function(ev)
+      if client.known_notes_index then
+        client.known_notes_index:on_note_deleted(ev.match)
+      end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ "BufNewFile" }, {
+    group = group,
+    pattern = "*.md",
+    callback = function(ev)
+      if client.known_notes_index then
+        client.known_notes_index:on_note_new(ev.match)
       end
     end,
   })

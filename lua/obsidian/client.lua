@@ -15,6 +15,7 @@ local channel = require("plenary.async.control").channel
 local config = require "obsidian.config"
 local Note = require "obsidian.note"
 local Workspace = require "obsidian.workspace"
+local KnownNotesIndex = require "obsidian.known_notes_index"
 local log = require "obsidian.log"
 local util = require "obsidian.util"
 local search = require "obsidian.search"
@@ -65,6 +66,7 @@ end
 ---@field opts obsidian.config.ClientOpts The client config.
 ---@field buf_dir obsidian.Path|? The parent directory of the current buffer.
 ---@field callback_manager obsidian.CallbackManager
+---@field known_notes_index obsidian.KnownNotesIndex
 ---@field log obsidian.Logger
 ---@field _default_opts obsidian.config.ClientOpts
 ---@field _quiet boolean
@@ -123,6 +125,9 @@ Client.set_workspace = function(self, workspace, opts)
 
   -- Initialize callback manager.
   self.callback_manager = CallbackManager.new(self, self.opts.callbacks)
+
+  self.known_notes_index = KnownNotesIndex.new(self)
+  self.known_notes_index:start()
 
   -- Setup UI add-ons.
   if self.opts.ui.enable then

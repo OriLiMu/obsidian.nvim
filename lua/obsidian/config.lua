@@ -240,6 +240,10 @@ config.ClientOpts.normalize = function(opts, defaults)
   opts = tbl_override(defaults, opts)
 
   opts.completion = tbl_override(defaults.completion, opts.completion)
+  opts.completion.known_notes = tbl_override(defaults.completion.known_notes, opts.completion.known_notes)
+  if opts.completion.known_notes.notes_root ~= nil then
+    opts.completion.known_notes.notes_root = vim.fs.normalize(vim.fn.expand(opts.completion.known_notes.notes_root))
+  end
   opts.mappings = opts.mappings and opts.mappings or defaults.mappings
   opts.picker = tbl_override(defaults.picker, opts.picker)
   opts.daily_notes = tbl_override(defaults.daily_notes, opts.daily_notes)
@@ -298,7 +302,24 @@ config.LinkStyle = {
 ---
 ---@field nvim_cmp boolean
 ---@field min_chars integer
+---@field known_notes obsidian.config.KnownNotesCompletionOpts
 config.CompletionOpts = {}
+
+---@class obsidian.config.KnownNotesCompletionOpts
+---
+---@field min_chars integer
+---@field notes_root string|?
+---@field case_sensitive boolean
+config.KnownNotesCompletionOpts = {}
+
+---@return obsidian.config.KnownNotesCompletionOpts
+config.KnownNotesCompletionOpts.default = function()
+  return {
+    min_chars = 3,
+    notes_root = nil,
+    case_sensitive = false,
+  }
+end
 
 --- Get defaults.
 ---
@@ -308,6 +329,7 @@ config.CompletionOpts.default = function()
   return {
     nvim_cmp = has_nvim_cmp,
     min_chars = 2,
+    known_notes = config.KnownNotesCompletionOpts.default(),
   }
 end
 
