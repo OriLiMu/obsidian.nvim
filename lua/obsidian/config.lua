@@ -310,6 +310,7 @@ config.CompletionOpts = {}
 ---@field min_chars integer
 ---@field notes_root string|?
 ---@field case_sensitive boolean
+---@field alias_insert_filename boolean
 config.KnownNotesCompletionOpts = {}
 
 ---@return obsidian.config.KnownNotesCompletionOpts
@@ -318,6 +319,7 @@ config.KnownNotesCompletionOpts.default = function()
     min_chars = 2,
     notes_root = nil,
     case_sensitive = false,
+    alias_insert_filename = true,
   }
 end
 

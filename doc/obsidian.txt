@@ -326,6 +326,19 @@ carefully and customize it to your needs:
         nvim_cmp = true,
         -- Trigger completion at 2 chars.
         min_chars = 2,
+        -- Optional, known note completion outside of `[[...]]`.
+        known_notes = {
+          -- Trigger known note completion at 2 chars.
+          min_chars = 2,
+          -- Optional, where to index notes for known note completion.
+          -- Defaults to the active workspace / vault root.
+          notes_root = nil,
+          -- Optional, whether known note completion is case sensitive.
+          case_sensitive = false,
+          -- Optional, when true alias matches still insert the linked note filename.
+          -- Example: 'bbbb' alias of 'aaaa.md' will insert '[[aaaa]]'.
+          alias_insert_filename = true,
+        },
       },
     
       -- Optional, configure key mappings. These are the defaults. If you don't want to set any keymappings this

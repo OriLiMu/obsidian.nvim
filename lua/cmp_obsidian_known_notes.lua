@@ -49,16 +49,17 @@ source.find_current_term = function(request)
 end
 
 ---@param request table
----@param label string
+---@param menu_label string
+---@param insert_label string
 ---@param insert_start integer
 ---@param insert_end integer
 ---@return table
-source.build_item = function(request, label, insert_start, insert_end)
-  local new_text = string.format("[[%s]]", label)
+source.build_item = function(request, menu_label, insert_label, insert_start, insert_end)
+  local new_text = string.format("[[%s]]", insert_label)
   return {
-    label = new_text,
+    label = string.format("[[%s]]", menu_label),
     kind = 18,
-    sortText = label,
+    sortText = menu_label,
     documentation = {
       kind = "markdown",
       value = string.format("`%s`", new_text),
@@ -77,6 +78,26 @@ source.build_item = function(request, label, insert_start, insert_end)
       },
     },
   }
+end
+
+---@param path string|?
+---@return string|?
+source.get_filename_stem = function(path)
+  if type(path) ~= "string" or string.len(path) == 0 then
+    return nil
+  end
+
+  local filename = vim.fs.basename(path)
+  if filename == nil or string.len(filename) == 0 then
+    return nil
+  end
+
+  local stem = vim.fn.fnamemodify(filename, ":r")
+  if stem == nil or string.len(stem) == 0 then
+    return nil
+  end
+
+  return stem
 end
 
 source.complete = function(self, request, callback)
@@ -114,8 +135,17 @@ source.complete = function(self, request, callback)
 
     local matches = index:query(search)
     local items = {}
+    local alias_insert_filename = client.opts.completion.known_notes.alias_insert_filename
     for _, match in ipairs(matches) do
-      items[#items + 1] = source.build_item(request, match.label, insert_start, insert_end)
+      local insert_label = match.label
+      if alias_insert_filename and match.kind == "alias" then
+        local stem = source.get_filename_stem(match.path)
+        if stem ~= nil then
+          insert_label = stem
+        end
+      end
+
+      items[#items + 1] = source.build_item(request, match.label, insert_label, insert_start, insert_end)
     end
 
     if current_id ~= self._request_id then

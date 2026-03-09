@@ -2,6 +2,14 @@ local obsidian = require "obsidian"
 local source_mod = require "cmp_obsidian_known_notes"
 
 local with_fake_client = function(fake_client, run)
+  fake_client.opts = vim.tbl_deep_extend("force", {
+    completion = {
+      known_notes = {
+        alias_insert_filename = true,
+      },
+    },
+  }, fake_client.opts or {})
+
   local original_get_client = obsidian.get_client
   obsidian.get_client = function()
     return fake_client
@@ -21,7 +29,7 @@ describe("cmp_obsidian_known_notes.find_current_term()", function()
       context = {
         cursor_before_line = "prefix how-to",
         cursor = {
-          col = string.len("prefix how-to") + 1,
+          col = string.len "prefix how-to" + 1,
         },
       },
     }
@@ -105,6 +113,92 @@ describe("cmp_obsidian_known_notes.Source", function()
     assert.is_true(callback_result.isIncomplete)
     assert.equals(1, #callback_result.items)
     assert.equals("[[How-to-eat-an-apple]]", callback_result.items[1].textEdit.newText)
+  end)
+
+  it("should insert filename when alias match and alias_insert_filename is true", function()
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.bo[bufnr].filetype = "markdown"
+
+    local source = source_mod.new()
+    local callback_result
+
+    with_fake_client({
+      known_notes_index = {
+        is_enabled = function()
+          return true
+        end,
+        min_chars = function()
+          return 3
+        end,
+        query = function()
+          return {
+            { label = "bbbb", kind = "alias", path = "/tmp/aaaa.md" },
+          }
+        end,
+      },
+    }, function()
+      source:complete({
+        context = {
+          bufnr = bufnr,
+          cursor_before_line = "bbb",
+          cursor = { col = 4, row = 1 },
+        },
+      }, function(res)
+        callback_result = res
+      end)
+      vim.wait(1000, function()
+        return callback_result ~= nil
+      end, 20)
+    end)
+
+    assert.equals("[[bbbb]]", callback_result.items[1].label)
+    assert.equals("[[aaaa]]", callback_result.items[1].textEdit.newText)
+  end)
+
+  it("should insert alias when alias_insert_filename is false", function()
+    local bufnr = vim.api.nvim_create_buf(false, true)
+    vim.bo[bufnr].filetype = "markdown"
+
+    local source = source_mod.new()
+    local callback_result
+
+    with_fake_client({
+      opts = {
+        completion = {
+          known_notes = {
+            alias_insert_filename = false,
+          },
+        },
+      },
+      known_notes_index = {
+        is_enabled = function()
+          return true
+        end,
+        min_chars = function()
+          return 3
+        end,
+        query = function()
+          return {
+            { label = "bbbb", kind = "alias", path = "/tmp/aaaa.md" },
+          }
+        end,
+      },
+    }, function()
+      source:complete({
+        context = {
+          bufnr = bufnr,
+          cursor_before_line = "bbb",
+          cursor = { col = 4, row = 1 },
+        },
+      }, function(res)
+        callback_result = res
+      end)
+      vim.wait(1000, function()
+        return callback_result ~= nil
+      end, 20)
+    end)
+
+    assert.equals("[[bbbb]]", callback_result.items[1].textEdit.newText)
   end)
 
   it("should discard stale request results", function()

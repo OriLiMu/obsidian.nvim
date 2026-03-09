@@ -285,6 +285,9 @@ This is a complete list of all of the options that can be passed to `require("ob
       notes_root = nil,
       -- Optional, whether known note completion is case sensitive.
       case_sensitive = false,
+      -- Optional, when true alias matches still insert the linked note filename.
+      -- Example: 'bbbb' alias of 'aaaa.md' will insert '[[aaaa]]'.
+      alias_insert_filename = true,
     },
   },
 
@@ -656,7 +659,7 @@ obsidian.nvim will set itself up as an nvim-cmp source automatically when you en
 
 Note that in order to trigger completion for tags _within YAML frontmatter_ you still need to type the "#" at the start of the tag. obsidian.nvim will remove the "#" when you hit enter on the tag completion item.
 
-Known note completion will also trigger in markdown buffers when a plain term reaches `completion.known_notes.min_chars`. It matches indexed note filenames and frontmatter `aliases`, and inserts wiki links like `[[My-Note]]`.
+Known note completion will also trigger in markdown buffers when a plain term reaches `completion.known_notes.min_chars`. It matches indexed note filenames and frontmatter `aliases`, and inserts wiki links like `[[My-Note]]`. By default (`completion.known_notes.alias_insert_filename = true`), alias matches still insert the note filename.
 
 #### Syntax highlighting
 

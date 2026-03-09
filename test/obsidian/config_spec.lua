@@ -11,6 +11,7 @@ describe("config.ClientOpts.default()", function()
     assert.equals(2, opts.completion.known_notes.min_chars)
     assert.is_nil(opts.completion.known_notes.notes_root)
     assert.is_false(opts.completion.known_notes.case_sensitive)
+    assert.is_true(opts.completion.known_notes.alias_insert_filename)
   end)
 end)
 
@@ -25,6 +26,19 @@ describe("config.ClientOpts.normalize()", function()
       },
     }
 
-    assert.equals(vim.fs.normalize("/tmp/test-notes"), opts.completion.known_notes.notes_root)
+    assert.equals(vim.fs.normalize "/tmp/test-notes", opts.completion.known_notes.notes_root)
+  end)
+
+  it("should preserve completion.known_notes.alias_insert_filename", function()
+    local opts = config.ClientOpts.normalize {
+      workspaces = { { path = "/tmp" } },
+      completion = {
+        known_notes = {
+          alias_insert_filename = false,
+        },
+      },
+    }
+
+    assert.is_false(opts.completion.known_notes.alias_insert_filename)
   end)
 end)
