@@ -5,3 +5,14 @@
 - [x] 补充/更新单元测试（配置默认值与 known_notes 补全行为）
 - [x] 更新 README 与 `doc/obsidian.txt` 配置文档
 - [x] 运行相关测试并记录结果
+
+## 修复 `[[note#]]` 补全误告警
+
+- [x] 定位 `[[note#]]` 触发 “already exists” 告警的调用链与判断条件
+- [x] 修正 `cmp_obsidian_new` 对未完成锚点链接的处理，避免误走新建笔记逻辑
+- [x] 补充回归测试，覆盖中文路径与尾随 `#` 场景
+- [x] 运行相关测试并记录结果
+
+验证结果：
+- [x] `test/obsidian/cmp_obsidian_new_spec.lua`
+- [x] `test/obsidian/util_spec.lua`

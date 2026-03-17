@@ -32,6 +32,8 @@ source.complete = function(_, request, callback)
   local block_link
   search, block_link = util.strip_block_links(search)
 
+  local incomplete_anchor_link = vim.endswith(search, "#")
+
   ---@type string|?
   local anchor_link
   search, anchor_link = util.strip_anchor_links(search)
@@ -42,8 +44,8 @@ source.complete = function(_, request, callback)
     return
   end
 
-  -- If anchor link is incomplete, do nothing.
-  if not anchor_link and vim.endswith(search, "#") then
+  -- 如果锚点链接还未输入完成，则不提供新建笔记候选。
+  if incomplete_anchor_link then
     callback { isIncomplete = true }
     return
   end
