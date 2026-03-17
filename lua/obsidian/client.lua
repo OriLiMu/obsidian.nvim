@@ -593,7 +593,7 @@ Client.find_files_async = function(self, term, callback, opts)
 end
 
 --- Resolve the query to a single note if possible, otherwise all close matches are returned.
---- The 'query' can be a path, filename, note ID, alias, title, etc.
+--- The 'query' can be a path, filename, note ID, alias, etc.
 ---
 ---@param query string
 ---@param opts { timeout: integer|?, notes: obsidian.note.LoadOpts|? }|?

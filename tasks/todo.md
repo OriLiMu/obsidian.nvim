@@ -16,3 +16,15 @@
 验证结果：
 - [x] `test/obsidian/cmp_obsidian_new_spec.lua`
 - [x] `test/obsidian/util_spec.lua`
+
+## 忽略首个 Heading 1 参与 `follow link` 解析
+
+- [x] 定位 `ObsidianFollowLink` 命中的引用标识集合，确认首个 H1 的进入点
+- [x] 补充回归测试，覆盖忽略首个 H1 且保留 `id`、`alias`、文件名匹配
+- [x] 调整引用标识生成逻辑，移除首个 H1 参与 note 解析
+- [x] 运行相关测试并记录结果
+
+验证结果：
+- [x] `test/obsidian/resolve_note_spec.lua`
+- [x] `test/obsidian/follow_link_spec.lua`
+- [x] `test/obsidian/note_spec.lua`

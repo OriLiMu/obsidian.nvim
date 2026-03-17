@@ -237,7 +237,7 @@ Parameters ~
                                                 *obsidian.Client.resolve_note()*
                  `Client.resolve_note`({self}, {query}, {opts})
 Resolve the query to a single note if possible, otherwise all close matches are returned.
-The 'query' can be a path, filename, note ID, alias, title, etc.
+The 'query' can be a path, filename, note ID, alias, etc.
 
 Parameters ~
 {query} `(string)`

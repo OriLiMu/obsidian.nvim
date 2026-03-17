@@ -155,7 +155,7 @@ end
 Note.reference_ids = function(self, opts)
   opts = opts or {}
   ---@type string[]
-  local ref_ids = { tostring(self.id), self:display_name() }
+  local ref_ids = { tostring(self.id) }
   if self.path then
     table.insert(ref_ids, self.path.name)
     table.insert(ref_ids, self.path.stem)
