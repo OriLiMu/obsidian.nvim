@@ -28,3 +28,21 @@
 - [x] `test/obsidian/resolve_note_spec.lua`
 - [x] `test/obsidian/follow_link_spec.lua`
 - [x] `test/obsidian/note_spec.lua`
+
+## 排查“按笔记名 / 别名补全并插入 Markdown 链接”相关代码
+
+- [x] 定位 `[[...]]` / `[...](...)` 上下文引用补全入口
+- [x] 定位普通文本中的已知笔记补全入口
+- [x] 阅读链接格式化实现，确认最终插入文本由谁生成
+- [x] 整理后续修正可切入的代码路径
+
+## 修复中文前缀下 known_notes 补全未删除触发词
+
+- [x] 确认问题根因是 `textEdit.range` 被 `nvim-cmp` 按默认 UTF-16 误解
+- [x] 为 `cmp_obsidian_known_notes` 显式声明 UTF-8 position encoding
+- [x] 补充中文前缀回归测试与编码约束测试
+- [x] 运行相关测试并记录结果
+
+验证结果：
+- [x] `make test TEST=test/obsidian/cmp_obsidian_known_notes_spec.lua`
+- [x] `make test TEST=test/obsidian/config_spec.lua`

@@ -21,6 +21,12 @@ source.get_trigger_characters = function()
   return { "-" }
 end
 
+source.get_position_encoding_kind = function()
+  -- textEdit.range 中的列号按 Neovim 的 UTF-8 字节列计算，需要显式告诉 nvim-cmp
+  -- 不要按默认的 UTF-16 再次转换，否则中文前缀下会错位。
+  return "utf-8"
+end
+
 source.get_keyword_pattern = function()
   return TERM_PATTERN_VIM
 end
