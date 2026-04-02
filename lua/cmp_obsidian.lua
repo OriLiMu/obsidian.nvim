@@ -223,15 +223,17 @@ source.complete = function(_, request, callback)
       if in_buffer_only then
         update_completion_options()
       else
-        -- Collect all valid aliases for the note, including ID, title, and filename.
+        -- 收集该笔记可用于引用匹配的标识：
+        -- ID、aliases、文件名（含后缀）和 stem（不含后缀）。
         ---@type string[]
-        local aliases
-        if not in_buffer_only then
-          aliases = util.tbl_unique { tostring(note.id), note:display_name(), unpack(note.aliases) }
-          if note.title ~= nil then
-            table.insert(aliases, note.title)
-          end
+        local aliases = note:reference_ids()
+        table.insert(aliases, note:display_name())
+        if note.title ~= nil then
+          table.insert(aliases, note.title)
         end
+        aliases = vim.tbl_filter(function(alias)
+          return alias ~= nil and alias ~= ""
+        end, util.tbl_unique(aliases))
 
         for alias in iter(aliases) do
           update_completion_options(alias)
