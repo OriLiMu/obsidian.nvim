@@ -241,6 +241,12 @@ describe("util.strip_anchor_links()", function()
     assert.equals("#hello-world#sub-header", anchor)
   end)
 
+  it("should strip cjk anchor links", function()
+    local line, anchor = util.strip_anchor_links "148_排序链表#第三天总结思路"
+    assert.equals("148_排序链表", line)
+    assert.equals("#第三天总结思路", anchor)
+  end)
+
   it("should leave line alone when there are no anchor links", function()
     local line, anchor = util.strip_anchor_links "Foo Bar"
     assert.equals("Foo Bar", line)
@@ -289,6 +295,10 @@ describe("util.header_to_anchor()", function()
   it("should have a '-' for every space", function()
     assert.equals("#hello--world", util.header_to_anchor "# Hello  World!")
   end)
+
+  it("should keep cjk characters", function()
+    assert.equals("#第三天总结思路", util.header_to_anchor "# 第三天总结思路")
+  end)
 end)
 
 describe("util.parse_header()", function()
@@ -303,6 +313,13 @@ describe("util.parse_header()", function()
 
   it("should strip white space at the end", function()
     assert.are_same({ header = "Hello World", level = 2, anchor = "#hello-world" }, util.parse_header "## Hello World ")
+  end)
+
+  it("should parse cjk headers", function()
+    assert.are_same(
+      { header = "第三天总结思路", level = 1, anchor = "#第三天总结思路" },
+      util.parse_header "# 第三天总结思路"
+    )
   end)
 end)
 

@@ -100,6 +100,42 @@ describe("Note.from_file()", function()
     )
   end)
 
+  it("should collect and resolve cjk anchor links", function()
+    local note = Note.from_file("test/fixtures/notes/note_with_cjk_headers.md", { collect_anchor_links = true })
+    assert.equals(note.id, "148_排序链表")
+    assert.is_not(note.anchor_links, nil)
+
+    assert.are_same({
+      anchor = "#第三天总结思路",
+      line = 7,
+      header = "第三天总结思路",
+      level = 1,
+    }, note.anchor_links["#第三天总结思路"])
+
+    assert.are_same({
+      anchor = "#继续分析-123",
+      line = 9,
+      header = "继续分析 123",
+      level = 2,
+      parent = note.anchor_links["#第三天总结思路"],
+    }, note.anchor_links["#继续分析-123"])
+
+    assert.are_same({
+      anchor = "#第三天总结思路#继续分析-123",
+      line = 9,
+      header = "继续分析 123",
+      level = 2,
+      parent = note.anchor_links["#第三天总结思路"],
+    }, note.anchor_links["#第三天总结思路#继续分析-123"])
+
+    assert.are_same({
+      anchor = "#第三天总结思路",
+      line = 7,
+      header = "第三天总结思路",
+      level = 1,
+    }, note:resolve_anchor_link "#第三天总结思路")
+  end)
+
   it("should be able to collect blocks", function()
     local note = Note.from_file("test/fixtures/notes/note_with_a_bunch_of_blocks.md", { collect_blocks = true })
     assert.is_not(nil, note.blocks)
