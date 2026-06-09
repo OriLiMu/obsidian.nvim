@@ -55,7 +55,7 @@ M.can_complete = function(request)
 end
 
 M.get_trigger_characters = function()
-  return { "[" }
+  return { "[", "#" }
 end
 
 M.get_keyword_pattern = function()

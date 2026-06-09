@@ -2,6 +2,7 @@ local abc = require "obsidian.abc"
 local completion = require "obsidian.completion.refs"
 local obsidian = require "obsidian"
 local util = require "obsidian.util"
+local compat = require "obsidian.compat"
 local iter = require("obsidian.itertools").iter
 local LinkStyle = require("obsidian.config").LinkStyle
 
@@ -65,6 +66,52 @@ source.complete = function(_, request, callback)
 
     ---@type table<string, cmp_obsidian.CompletionItem>
     local new_text_to_option = {}
+
+    ---@param values string[]
+    ---@return string
+    local function make_filter_text(values)
+      local out = {}
+      for _, value in ipairs(values) do
+        if type(value) == "string" and string.len(value) > 0 and not util.tbl_contains(out, value) then
+          out[#out + 1] = value
+        end
+      end
+      return table.concat(out, " ")
+    end
+
+    ---@param ref_ids string[]
+    ---@param suffix string|?
+    ---@return string[]
+    local function make_link_filter_values(ref_ids, suffix)
+      local values = {}
+      for _, ref_id in ipairs(ref_ids) do
+        if type(ref_id) == "string" and string.len(ref_id) > 0 then
+          values[#values + 1] = ref_id
+
+          if ref_type == completion.RefType.Wiki then
+            values[#values + 1] = "[[" .. ref_id
+            values[#values + 1] = "[[" .. ref_id .. "]]"
+          elseif ref_type == completion.RefType.Markdown then
+            values[#values + 1] = "[" .. ref_id
+            values[#values + 1] = "[" .. ref_id .. "]("
+          end
+
+          if suffix and string.len(suffix) > 0 then
+            values[#values + 1] = ref_id .. suffix
+
+            if ref_type == completion.RefType.Wiki then
+              values[#values + 1] = "[[" .. ref_id .. suffix
+              values[#values + 1] = "[[" .. ref_id .. suffix .. "]]"
+            elseif ref_type == completion.RefType.Markdown then
+              values[#values + 1] = "[" .. ref_id .. suffix
+              values[#values + 1] = "[" .. ref_id .. suffix .. "]("
+            end
+          end
+        end
+      end
+
+      return values
+    end
 
     for note in iter(results) do
       ---@cast note obsidian.Note
@@ -147,12 +194,22 @@ source.complete = function(_, request, callback)
             error "not implemented"
           end
 
-          ---@type string, string, string, table|?
-          local final_label, sort_text, new_text, documentation
+          ---@type string, string, string, string, table|?
+          local final_label, sort_text, new_text, filter_text, documentation
           if option.label then
+            local reference_ids = note:reference_ids()
+            local link_suffix = option.anchor and option.anchor.anchor
+              or option.block and ("#" .. option.block.id)
+              or nil
+            local insert_label = option.label
+
+            if ref_type == completion.RefType.Wiki and (option.anchor or option.block) then
+              insert_label = tostring(note.id)
+            end
+
             new_text = client:format_link(
               note,
-              { label = option.label, link_style = link_style, anchor = option.anchor, block = option.block }
+              { label = insert_label, link_style = link_style, anchor = option.anchor, block = option.block }
             )
 
             final_label = assert(option.alt_label or option.label)
@@ -162,6 +219,16 @@ source.complete = function(_, request, callback)
               final_label = final_label .. "#" .. option.block.id
             end
             sort_text = final_label
+            filter_text = make_filter_text(compat.flatten {
+              reference_ids,
+              make_link_filter_values(reference_ids, link_suffix),
+              option.label,
+              option.alt_label,
+              option.anchor and { option.anchor.anchor, option.anchor.header } or nil,
+              option.block and { "#" .. option.block.id, option.block.id } or nil,
+              link_suffix and make_link_filter_values({ option.label, option.alt_label }, link_suffix) or nil,
+              new_text,
+            })
 
             documentation = {
               kind = "markdown",
@@ -184,6 +251,7 @@ source.complete = function(_, request, callback)
 
             final_label = option.anchor.anchor
             sort_text = final_label
+            filter_text = make_filter_text { option.anchor.anchor, option.anchor.header, new_text }
 
             documentation = {
               kind = "markdown",
@@ -202,6 +270,7 @@ source.complete = function(_, request, callback)
 
             final_label = "#" .. option.block.id
             sort_text = final_label
+            filter_text = make_filter_text { final_label, option.block.id, new_text }
 
             documentation = {
               kind = "markdown",
@@ -213,9 +282,16 @@ source.complete = function(_, request, callback)
 
           if new_text_to_option[new_text] then
             new_text_to_option[new_text].sort_text = new_text_to_option[new_text].sort_text .. " " .. sort_text
+            new_text_to_option[new_text].filter_text =
+              make_filter_text { new_text_to_option[new_text].filter_text, filter_text }
           else
-            new_text_to_option[new_text] =
-              { label = final_label, new_text = new_text, sort_text = sort_text, documentation = documentation }
+            new_text_to_option[new_text] = {
+              label = final_label,
+              new_text = new_text,
+              sort_text = sort_text,
+              filter_text = filter_text,
+              documentation = documentation,
+            }
           end
         end
       end
@@ -269,6 +345,7 @@ source.complete = function(_, request, callback)
       table.insert(items, {
         documentation = option.documentation,
         sortText = option.sort_text,
+        filterText = option.filter_text,
         label = label,
         kind = 18, -- "Reference"
         textEdit = {

@@ -1148,8 +1148,73 @@ util.get_icon = function(path)
   return nil
 end
 
--- We are very loose here because obsidian allows pretty much anything
-util.ANCHOR_LINK_PATTERN = "#[^%[%]]*"
+local next_utf8_char = function(str, idx)
+  local byte = string.byte(str, idx)
+  if byte == nil then
+    return nil, idx
+  end
+
+  local width = 1
+  if byte >= 240 then
+    width = 4
+  elseif byte >= 224 then
+    width = 3
+  elseif byte >= 192 then
+    width = 2
+  end
+
+  return string.sub(str, idx, idx + width - 1), idx + width
+end
+
+local standardize_anchor_segment = function(segment)
+  segment = string.lower(util.strip_whitespace(segment))
+
+  local out = {}
+  local idx = 1
+  while idx <= #segment do
+    local char
+    char, idx = next_utf8_char(segment, idx)
+    if char == nil then
+      break
+    elseif string.match(char, "^%s$") then
+      out[#out + 1] = "-"
+    elseif #char > 1 or string.match(char, "^[%w_-]$") then
+      out[#out + 1] = char
+    end
+  end
+
+  return table.concat(out, "")
+end
+
+local parse_anchor_chain = function(text)
+  if not vim.startswith(text, "#") or text == "#" then
+    return nil
+  end
+
+  local parts = vim.split(string.sub(text, 2), "#", { plain = true, trimempty = false })
+  if #parts == 0 then
+    return nil
+  end
+
+  local normalized_parts = {}
+  for _, part in ipairs(parts) do
+    if util.strip_whitespace(part) == "" then
+      return nil
+    end
+
+    local normalized_part = standardize_anchor_segment(part)
+    if normalized_part == "" then
+      return nil
+    end
+
+    normalized_parts[#normalized_parts + 1] = normalized_part
+  end
+
+  return "#" .. table.concat(normalized_parts, "#")
+end
+
+-- We are very loose here because obsidian allows pretty much anything.
+util.ANCHOR_LINK_PATTERN = "#.+"
 
 util.BLOCK_PATTERN = "%^[%w%d][%w%d-]*"
 
@@ -1159,8 +1224,7 @@ util.BLOCK_LINK_PATTERN = "#" .. util.BLOCK_PATTERN
 ---@param line string
 ---@return string, string|?
 util.strip_anchor_links = function(line)
-  ---@type string|?
-  local anchor
+  local start = 1
 
   -- 检查是否是 [[note_name#anchor]] 格式的链接
   local link_match = string.match(line, "%[%[(.-)%]%]")
@@ -1176,18 +1240,20 @@ util.strip_anchor_links = function(line)
 
   -- 处理普通文本中的锚点
   while true do
-    local start_pos, end_pos = string.find(line, util.ANCHOR_LINK_PATTERN .. "$")
-    if start_pos then
-      local anchor_match = string.sub(line, start_pos, end_pos)
-      anchor = anchor or ""
-      anchor = anchor_match .. anchor
-      line = string.sub(line, 1, start_pos - 1)
-    else
+    local anchor_start = string.find(line, "#", start, true)
+    if anchor_start == nil then
       break
     end
+
+    local anchor = parse_anchor_chain(string.sub(line, anchor_start))
+    if anchor ~= nil then
+      return string.sub(line, 1, anchor_start - 1), anchor
+    end
+
+    start = anchor_start + 1
   end
 
-  return line, anchor and util.standardize_anchor(anchor)
+  return line, nil
 end
 
 --- Parse a block line from a line.
@@ -1230,33 +1296,28 @@ end
 ---@param line string
 ---@return boolean
 util.is_header = function(line)
-  if string.match(line, "^#+%s+[%w]+") then
-    return true
-  else
-    return false
-  end
+  return string.match(line, "^#+%s+%S") ~= nil
 end
 
 --- Get the header level of a line.
 ---@param line string
 ---@return integer
 util.header_level = function(line)
-  local headers, match_count = string.gsub(line, "^(#+)%s+[%w]+.*", "%1")
-  if match_count > 0 then
-    return string.len(headers)
-  else
-    return 0
-  end
+  local headers = string.match(line, "^(#+)%s+%S")
+  return headers and string.len(headers) or 0
 end
 
 ---@param line string
 ---@return { header: string, level: integer, anchor: string }|?
 util.parse_header = function(line)
-  local header_start, header = string.match(line, "^(#+)%s+([^%s]+.*)$")
+  local header_start, header = string.match(line, "^(#+)%s+(.+)$")
   if header_start and header then
     header = util.strip_whitespace(header)
+    if header == "" then
+      return nil
+    end
     return {
-      header = util.strip_whitespace(header),
+      header = header,
       level = string.len(header_start),
       anchor = util.header_to_anchor(header),
     }
@@ -1271,19 +1332,27 @@ end
 ---
 ---@return string
 util.standardize_anchor = function(anchor)
-  -- Lowercase everything.
-  anchor = string.lower(anchor)
-  -- Replace whitespace with "-".
-  anchor = string.gsub(anchor, "%s", "-")
-  -- Remove every non-alphanumeric character except Chinese characters.
-  -- Keep:
-  -- - # (for anchor links)
-  -- - word characters (%w)
-  -- - underscore (_)
-  -- - hyphen (-)
-  -- - Chinese characters (UTF-8 byte ranges)
-  anchor = string.gsub(anchor, "[^#%w_%-\xe4-\xef\x80-\xbf]", "")
-  return anchor
+  anchor = util.strip_whitespace(anchor)
+  if anchor == "" then
+    return "#"
+  end
+
+  local normalized_parts = {}
+  local parts = vim.split(anchor, "#", { plain = true, trimempty = false })
+  for _, part in ipairs(parts) do
+    if part ~= "" then
+      local normalized_part = standardize_anchor_segment(part)
+      if normalized_part ~= "" then
+        normalized_parts[#normalized_parts + 1] = normalized_part
+      end
+    end
+  end
+
+  if #normalized_parts == 0 then
+    return "#"
+  end
+
+  return "#" .. table.concat(normalized_parts, "#")
 end
 
 --- Transform a markdown header into an link, e.g. "# Hello World" -> "#hello-world".

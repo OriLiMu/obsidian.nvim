@@ -110,6 +110,14 @@ source.complete = function(_, request, callback)
     end
 
     local new_text = client:format_link(new_note, { link_style = link_style, anchor = anchor, block = block })
+    local filter_values = { new_note_opts.label, new_text }
+    if ref_type == completion.RefType.Wiki then
+      filter_values[#filter_values + 1] = "[[" .. new_note_opts.label
+      filter_values[#filter_values + 1] = "[[" .. new_note_opts.label .. "]]"
+    elseif ref_type == completion.RefType.Markdown then
+      filter_values[#filter_values + 1] = "[" .. new_note_opts.label
+      filter_values[#filter_values + 1] = "[" .. new_note_opts.label .. "]("
+    end
     local documentation = {
       kind = "markdown",
       value = new_note:display_info {
@@ -120,6 +128,7 @@ source.complete = function(_, request, callback)
     items[#items + 1] = {
       documentation = documentation,
       sortText = new_note_opts.label,
+      filterText = table.concat(filter_values, " "),
       label = label,
       kind = 18,
       textEdit = {
